@@ -1,0 +1,2519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Doodle Rocket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Gaegu:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --space:#1E2B63;--paper:#FFFDF6;--ink:#2B2A33;--sun:#FFD23F;--tomato:#FF6B57;
+  --mint:#43D9AD;--gum:#FF9BD2;--sky:#6EC6FF;--lilac:#B69CFF;
+  --hand:'Gaegu','Chalkboard SE','Comic Sans MS',cursive;
+  --clear:'Andika','Chalkboard SE','Trebuchet MS',sans-serif;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--space);touch-action:none;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;font-family:var(--hand);color:var(--ink)}
+#stage{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+#grain{position:fixed;inset:0;pointer-events:none;opacity:.22;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.4 0 0 0 -.62'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+#ui{position:fixed;inset:0;pointer-events:none}
+#ui button,#ui input,#ui .interactive{pointer-events:auto}
+#world{transition:opacity .35s}
+svg .in,svg .core{transform-box:fill-box;transform-origin:center}
+
+.paper{background:var(--paper);border:3px solid var(--ink);
+  border-radius:255px 18px 225px 18px/18px 225px 18px 255px;box-shadow:4px 5px 0 rgba(8,12,40,.5)}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+button:focus-visible,input:focus-visible{outline:4px dashed var(--sun);outline-offset:5px}
+button.paper:active{transform:translate(2px,3px);box-shadow:1px 2px 0 rgba(8,12,40,.5)}
+
+#home{position:absolute;top:calc(12px + var(--st));left:12px;width:64px;height:64px;padding:0;
+  display:grid;place-items:center;transform:rotate(-4deg)}
+#cap{position:absolute;top:calc(14px + var(--st));left:90px;right:90px;margin:0 auto;width:fit-content;
+  max-width:600px;padding:8px 22px 10px;font-size:clamp(22px,4.8vw,32px);line-height:1.05;text-align:center;
+  transform:rotate(-1deg)}
+#cap::before{content:"";position:absolute;top:-12px;left:50%;width:70px;height:22px;margin-left:-35px;
+  background:rgba(255,230,140,.7);transform:rotate(3deg)}
+#cap.pop{animation:capPop .35s ease-out}
+@keyframes capPop{0%{transform:rotate(-1deg) scale(.85)}70%{transform:rotate(-1deg) scale(1.06)}100%{transform:rotate(-1deg) scale(1)}}
+#prog{position:absolute;top:calc(96px + var(--st));left:0;right:0;display:flex;justify-content:center;gap:12px}
+#prog span{width:22px;height:22px;border:3px dashed var(--paper);border-radius:50% 45% 55% 50%;opacity:.8}
+#prog span.on{background:var(--sun);border:3px solid var(--ink);opacity:1;animation:dotIn .4s ease-out}
+@keyframes dotIn{0%{transform:scale(.3)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+#answers{position:absolute;bottom:calc(20px + var(--sb));left:0;right:0;display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(12px,3.5vw,24px);padding:0 10px}
+.ans{min-width:clamp(120px,40vw,200px);min-height:clamp(58px,9vh,80px);padding:8px 18px;font-family:var(--clear);font-weight:700;
+  font-size:clamp(22px,5.4vw,34px);line-height:1.15;animation:cardIn .45s cubic-bezier(.3,1.6,.5,1) both}
+.ans.long{width:min(90vw,560px);min-width:0;min-height:54px;font-size:clamp(17px,4.2vw,23px);text-align:left;padding:10px 18px}
+@media (min-aspect-ratio: 5/4){ .ans.long{width:44vw} }
+.ans.right{background:var(--sun)}
+.ans:disabled{opacity:.4;text-decoration:line-through}
+#again{position:absolute;top:calc(12px + var(--st));right:12px;width:64px;height:64px;padding:0;display:grid;place-items:center;transform:rotate(4deg)}
+.passage{position:absolute;left:14px;right:14px;margin:0 auto;max-width:640px;padding:12px 20px;overflow:auto;font-family:var(--clear);
+  font-size:clamp(17px,4.3vw,23px);line-height:1.45;transform:rotate(-.4deg)}
+.passage p{margin:0 0 8px}
+.passage .q{font-weight:700;color:#9C3526;margin:0}
+#levels{position:absolute;left:0;right:0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:0 12px}
+.lvtitle{width:100%;text-align:center;color:var(--paper);font-size:22px}
+.lvl{padding:5px 14px;font-size:clamp(17px,4vw,22px)}
+.lvl[aria-pressed="true"]{background:var(--sun);transform:rotate(-2deg) scale(1.06)}
+.num{width:clamp(78px,20vw,112px);height:clamp(84px,21vw,118px);font-family:var(--clear);font-weight:700;
+  font-size:clamp(44px,11vw,68px);line-height:1;animation:cardIn .45s cubic-bezier(.3,1.6,.5,1) both}
+.num:nth-child(1){transform:rotate(-3deg)}
+.num:nth-child(2){animation-delay:.08s;transform:rotate(2deg)}
+.num:nth-child(3){animation-delay:.16s;transform:rotate(-1deg)}
+.num.right{background:var(--sun)}
+.wiggle-h{animation:wigH .5s !important}
+@keyframes cardIn{from{opacity:0;translate:0 60px}to{opacity:1;translate:0 0}}
+@keyframes wigH{20%{translate:-10px 0}40%{translate:9px 0}60%{translate:-6px 0}80%{translate:3px 0}}
+
+.wiggle{animation:wig .5s}
+@keyframes wig{20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-7deg)}80%{transform:rotate(4deg)}}
+.bob{animation:bob 2.8s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-9px)}}
+.breathe{animation:breathe 1.8s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.09)}}
+.pulse{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.08);opacity:.65}}
+.flame{transform-box:fill-box;transform-origin:50% 0;animation:flick .16s infinite alternate}
+@keyframes flick{to{transform:scaleY(1.28) scaleX(.88)}}
+
+#play{position:absolute;left:50%;bottom:calc(9vh + var(--sb));width:clamp(120px,30vw,170px);height:clamp(120px,30vw,170px);
+  margin-left:calc(clamp(120px,30vw,170px) / -2);border-radius:52% 48% 50% 50%/50% 52% 48% 50%;display:grid;place-items:center;
+  animation:bob 2.4s ease-in-out infinite}
+#play svg{width:60%;height:60%}
+
+.pagebtn{position:absolute;top:50%;width:50px;height:62px;margin-top:-31px;padding:0;display:grid;place-items:center}
+#prev{left:6px;transform:rotate(-3deg)}
+#next{right:6px;transform:rotate(3deg)}
+
+#gear{position:absolute;right:14px;bottom:calc(14px + var(--sb));width:52px;height:52px;padding:0;display:grid;place-items:center;opacity:.85}
+#gear .ring{position:absolute;inset:-7px;width:calc(100% + 14px);height:calc(100% + 14px);pointer-events:none}
+#gear .ring circle{fill:none;stroke:var(--sun);stroke-width:5;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .2s}
+#gear.holding .ring circle{stroke-dashoffset:0;transition:stroke-dashoffset 3s linear}
+#tip{position:absolute;right:76px;bottom:calc(20px + var(--sb));padding:6px 14px;font-size:20px;transform:rotate(-2deg);pointer-events:none}
+
+#palette{position:absolute;bottom:calc(16px + var(--sb));left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:12px}
+#palette .row{display:flex;gap:10px;justify-content:center}
+.sw{width:46px;height:46px;border:3px solid var(--ink);border-radius:50% 46% 52% 48%;box-shadow:2px 3px 0 rgba(8,12,40,.5)}
+.sw[aria-pressed="true"]{transform:translateY(-8px) scale(1.12);outline:3px solid var(--paper);outline-offset:3px}
+.tool{padding:6px 18px;font-size:24px}
+.tool.go{background:var(--sun)}
+
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(14,20,56,.55);pointer-events:auto}
+.sheet{position:relative;padding:24px 28px 26px;width:min(92vw,440px);max-height:92vh;overflow:auto;text-align:center;transform:rotate(-1deg);
+  animation:sheetIn .5s cubic-bezier(.3,1.5,.5,1)}
+@keyframes sheetIn{from{transform:rotate(-8deg) scale(.6);opacity:0}}
+.sheet h2{margin:4px 0 10px;font-size:clamp(34px,8vw,46px);line-height:1}
+.sheet .row{display:flex;justify-content:center;gap:22px;margin-top:10px}
+.bigbtn{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:22px}
+.bigbtn .paper{width:78px;height:78px;display:grid;place-items:center}
+#sticker-svg{width:min(52vw,210px);height:min(52vw,210px);animation:spinIn .8s cubic-bezier(.3,1.5,.5,1)}
+@keyframes spinIn{from{transform:rotate(-200deg) scale(.1)}}
+.confetti{position:absolute;top:-40px;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+
+#panel .sheet{text-align:left;transform:rotate(.5deg)}
+#panel h2{font-size:36px}
+.lbl{margin:14px 0 6px;font-size:24px}
+.seg{display:flex;gap:10px;flex-wrap:wrap}
+.opt{padding:8px 14px;font-size:21px;border:3px solid var(--ink);border-radius:14px 20px 12px 18px;background:#fff}
+.opt[aria-pressed="true"]{background:var(--mint)}
+.done{margin-top:20px;padding:10px 26px;font-size:26px;background:var(--sun) !important}
+.note{font-size:19px;margin:14px 0 0;opacity:.75}
+#panel input{font-family:var(--clear);font-size:24px;padding:8px 12px;width:100%;border:3px solid var(--ink);border-radius:12px 18px 10px 16px;
+  text-transform:uppercase;user-select:text;-webkit-user-select:text;background:#fff}
+
+@media (prefers-reduced-motion: reduce){
+  .bob,.breathe,.pulse,.flame,#play{animation:none !important}
+  .confetti{display:none}
+}
+</style>
+</head>
+<body>
+<svg id="stage" aria-label="Doodle Rocket game">
+  <defs>
+    <filter id="w0" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <filter id="w1" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="11" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <filter id="w2" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="23" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
+      <line x1="0" y1="0" x2="0" y2="9" stroke="#000" stroke-opacity=".13" stroke-width="3"/>
+    </pattern>
+  </defs>
+  <g id="sky"></g>
+  <g id="world"></g>
+</svg>
+<div id="grain"></div>
+<div id="ui"></div>
+
+<script>
+(() => {
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const stage = document.getElementById('stage');
+const sky = document.getElementById('sky');
+const world = document.getElementById('world');
+const ui = document.getElementById('ui');
+const C = {space:'#1E2B63',paper:'#FFFDF6',ink:'#2B2A33',sun:'#FFD23F',tomato:'#FF6B57',mint:'#43D9AD',
+  gum:'#FF9BD2',sky:'#6EC6FF',lilac:'#B69CFF',cookie:'#F1DDB5',choc:'#6E4326',moon:'#FFF1A8',orange:'#F4A259',aqua:'#9EE6E8'};
+const FONT_CLEAR = "Andika, 'Chalkboard SE', 'Trebuchet MS', sans-serif";
+const FONT_HAND = "Gaegu, 'Chalkboard SE', 'Comic Sans MS', cursive";
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TOP = 132;
+
+const S = {level:'sprout', age:'little', repeat:null, sound:true, voice:true, name:'', stickers:[], screen:null, gameKey:null, round:0, data:{}, greeted:false, page:0};
+let W = innerWidth, H = innerHeight;
+// Test hooks: ?speed=10 runs waits/animations 10x faster, ?mute turns off voice and sound.
+const QS = new URLSearchParams(location.search);
+const SPEED = Math.max(1, +QS.get('speed') || 1);
+if (QS.has('mute')){ S.voice = false; S.sound = false; }
+let sid = 0;
+
+/* =========================================================
+   Helpers
+   ========================================================= */
+function el(tag, attrs = {}, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const rnd = (a,b) => a + Math.random()*(b-a);
+const randInt = (a,b) => Math.floor(rnd(a, b+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const f = n => Math.round(n*10)/10;
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const wait = ms => new Promise(r => setTimeout(r, ms / SPEED));
+const cap1 = s => s[0].toUpperCase() + s.slice(1);
+const art_ = w => /^[aeiou]/i.test(w) ? 'an' : 'a';
+const easeOutBack = t => { const c1=1.70158,c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); };
+const easeInOut = t => t<.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+const lin = t => t;
+function tween(ms, fn, ease = easeInOut){
+  ms /= SPEED;
+  return new Promise(res => {
+    const t0 = performance.now();
+    const step = now => { const t = Math.min(1, (now-t0)/ms); fn(ease(t)); if (t<1) requestAnimationFrame(step); else res(); };
+    requestAnimationFrame(step);
+  });
+}
+const angDiff = (a,b) => Math.abs(((a-b)%360+540)%360-180);
+
+/* =========================================================
+   Hand-drawn shape primitives
+   ========================================================= */
+function smooth(pts){
+  const n = pts.length; let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i=0;i<n;i++){
+    const p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n], p3=pts[(i+2)%n];
+    const c1=[f(p1[0]+(p2[0]-p0[0])/6), f(p1[1]+(p2[1]-p0[1])/6)];
+    const c2=[f(p2[0]-(p3[0]-p1[0])/6), f(p2[1]-(p3[1]-p1[1])/6)];
+    d += ` C${c1} ${c2} ${p2}`;
+  }
+  return d + 'Z';
+}
+function blob(r, j=.07, n=12){
+  const pts=[], o=rnd(0,6.28);
+  for (let i=0;i<n;i++){ const a=o+i/n*Math.PI*2, rr=r*(1+rnd(-j,j)); pts.push([f(Math.cos(a)*rr), f(Math.sin(a)*rr)]); }
+  return smooth(pts);
+}
+function ovalD(rx, ry, j=.04, n=14){
+  const pts=[], o=rnd(0,6.28);
+  for (let i=0;i<n;i++){ const a=o+i/n*Math.PI*2, k=1+rnd(-j,j); pts.push([f(Math.cos(a)*rx*k), f(Math.sin(a)*ry*k)]); }
+  return smooth(pts);
+}
+function starD(R, r=R*.5, j=.05){
+  let d='';
+  for (let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=(i%2?r:R)*(1+rnd(-j,j)); d += (i?'L':'M') + f(Math.cos(a)*rr) + ',' + f(Math.sin(a)*rr); }
+  return d + 'Z';
+}
+function rrD(w,h,r,j=2){
+  const x=-w/2,y=-h/2,J=()=>f(rnd(-j,j));
+  return `M${f(x+r)+J()},${f(y)+J()} L${f(x+w-r)+J()},${f(y)+J()} Q${f(x+w)},${f(y)} ${f(x+w)+J()},${f(y+r)+J()} L${f(x+w)+J()},${f(y+h-r)+J()} Q${f(x+w)},${f(y+h)} ${f(x+w-r)+J()},${f(y+h)+J()} L${f(x+r)+J()},${f(y+h)+J()} Q${f(x)},${f(y+h)} ${f(x)+J()},${f(y+h-r)+J()} L${f(x)+J()},${f(y+r)+J()} Q${f(x)},${f(y)} ${f(x+r)+J()},${f(y)+J()}Z`;
+}
+function heartD(r){ return `M0,${f(r*.8)} C${f(-r*1.15)},${f(-r*.05)} ${f(-r*.6)},${f(-r*.95)} 0,${f(-r*.38)} C${f(r*.6)},${f(-r*.95)} ${f(r*1.15)},${f(-r*.05)} 0,${f(r*.8)}Z`; }
+function hexD(r){ let d=''; for (let i=0;i<6;i++){ const a=Math.PI/6+i*Math.PI/3, rr=r*(1+rnd(-.03,.03)); d += (i?'L':'M') + f(Math.cos(a)*rr) + ',' + f(Math.sin(a)*rr); } return d+'Z'; }
+function triD(w,h){ const J=()=>f(rnd(-2,2)); return `M${J()},${f(-h/2)} L${f(w/2)+J()},${f(h/2)} L${f(-w/2)+J()},${f(h/2)}Z`; }
+const SHAPE = {
+  circle:(w)=>blob(w/2,.03,14), square:(w)=>rrD(w,w,w*.1,1.5), rectangle:(w,h)=>rrD(w,h,Math.min(w,h)*.1,1.5),
+  triangle:(w,h)=>triD(w,h), oval:(w,h)=>ovalD(w/2,h/2), star:(w)=>starD(w/2), heart:(w)=>heartD(w/2), hexagon:(w)=>hexD(w/2),
+};
+const SHAPE_WH = {rectangle:[1.35,.8], oval:[1.3,.85], triangle:[1.05,.95]};
+
+let boilK = 0;
+function sketch(parent, d, {fill=null, stroke=C.ink, sw=4, hatch=true, dash=null, double=true, boil=true} = {}){
+  const g = el('g', {}, parent);
+  if (boil){ g.setAttribute('data-boil',''); g.setAttribute('filter', `url(#w${boilK})`); }
+  let fp = null;
+  if (fill){ fp = el('path', {d, fill}, g); if (hatch) el('path', {d, fill:'url(#hatch)'}, g); }
+  const sp = el('path', {d, fill:'none', stroke, 'stroke-width':sw, 'stroke-linecap':'round', 'stroke-linejoin':'round'}, g);
+  if (dash) sp.setAttribute('stroke-dasharray', dash);
+  if (double && !dash) el('path', {d, fill:'none', stroke, 'stroke-width':Math.max(1.5, sw*.45), 'stroke-linecap':'round',
+    'stroke-linejoin':'round', opacity:.5, transform:`translate(${f(rnd(-2.5,2.5))},${f(rnd(-2.5,2.5))}) rotate(${f(rnd(-2,2))})`}, g);
+  g.fp = fp; g.sp = sp;
+  return g;
+}
+function drawShape(parent, name, size, color, opts={}){
+  const [a,b] = SHAPE_WH[name] || [1,1];
+  return sketch(parent, SHAPE[name](size*a, size*b), {fill:color, sw:4, ...opts});
+}
+function at(parent, x, y, s=1, r=0){ return el('g', {transform:`translate(${f(x)},${f(y)}) rotate(${f(r)}) scale(${s})`}, parent); }
+function txt(parent, s, size, {fill=C.ink, hand=false, x=0, y=0, stroke=null, sw=0, opacity=1} = {}){
+  const t = el('text', {x:f(x), y:f(y), dy:'.35em', 'text-anchor':'middle', 'font-size':f(size), 'font-family':hand?FONT_HAND:FONT_CLEAR,
+    'font-weight':700, fill, opacity}, parent);
+  if (stroke){ t.setAttribute('stroke', stroke); t.setAttribute('stroke-width', sw); t.setAttribute('paint-order','stroke'); t.setAttribute('stroke-linejoin','round'); }
+  t.textContent = s;
+  return t;
+}
+function line(parent, d, stroke, sw){ return el('path', {d, stroke, 'stroke-width':f(sw), fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, parent); }
+setInterval(() => {
+  if (reduceMotion || document.hidden) return;
+  boilK = (boilK+1) % 3;
+  document.querySelectorAll('[data-boil]').forEach(n => n.setAttribute('filter', `url(#w${boilK})`));
+}, 165);
+
+/* =========================================================
+   Things: positioned, animatable, tappable objects
+   ========================================================= */
+function thing(parent, x, y){
+  const g = el('g', {}, parent), inner = el('g', {class:'in'}, g), core = el('g', {class:'core'}, inner);
+  const o = {g, inner, core, x, y, s:1, r:0, hx:x, hy:y,
+    place(){ g.setAttribute('transform', `translate(${f(o.x)},${f(o.y)}) rotate(${f(o.r)}) scale(${Math.round(o.s*100)/100})`); }};
+  o.place();
+  return o;
+}
+function appear(o, delay=0){ o.s=0; o.place(); setTimeout(() => tween(400, t => { o.s=t; o.place(); }, easeOutBack), delay); }
+function wiggle(o){ o.core.classList.remove('wiggle'); void o.core.getBoundingClientRect(); o.core.classList.add('wiggle'); setTimeout(()=>o.core.classList.remove('wiggle'), 520); }
+function pop(o, amt=.3){ const b=o.s; return tween(320, t => { o.s = b*(1+amt*Math.sin(t*Math.PI)); o.place(); }, lin).then(()=>{ o.s=b; o.place(); }); }
+function flyTo(o, x, y, s=o.s, ms=380, ease=easeOutBack){
+  const sx=o.x, sy=o.y, ss=o.s;
+  return tween(ms, t => { o.x=sx+(x-sx)*t; o.y=sy+(y-sy)*t; o.s=ss+(s-ss)*t; o.place(); }, ease);
+}
+function interact(o, {onTap, drag=false, onDrop, label}){
+  const g = o.g;
+  g.style.cursor = 'pointer';
+  g.setAttribute('role','button'); g.setAttribute('tabindex','0');
+  if (label) g.setAttribute('aria-label', label);
+  g.addEventListener('keydown', e => { if ((e.key==='Enter'||e.key===' ') && !o.locked){ e.preventDefault(); unlockAudio(); onTap && onTap(); } });
+  g.addEventListener('pointerdown', e => {
+    if (o.locked) return;
+    e.preventDefault(); unlockAudio();
+    if (!drag){ onTap && onTap(); return; }
+    const sx=e.clientX, sy=e.clientY, ox=o.x, oy=o.y, os=o.s; let moved=false;
+    g.parentNode.appendChild(g);
+    const mv = ev => {
+      const dx=ev.clientX-sx, dy=ev.clientY-sy;
+      if (!moved && Math.hypot(dx,dy) > 12) moved = true;
+      if (moved){ o.x=ox+dx; o.y=oy+dy; o.s=os*1.12; o.place(); }
+    };
+    const up = () => {
+      removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
+      if (!moved){ onTap && onTap(); }
+      else { o.s = os; o.place(); onDrop && onDrop(); }
+    };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+  });
+}
+// A set of tappable options where exactly one is right. Hints the right one after 2 misses.
+function choose(things, {alive, isRight, right, wrong}){
+  return new Promise(res => {
+    let done=false, misses=0;
+    things.forEach(t => interact(t, {label:t.label, onTap: async () => {
+      if (done || !alive()) return;
+      if (isRight(t)){
+        done = true; things.forEach(q => { q.locked = true; q.inner.classList.remove('pulse'); });
+        await right(t); if (alive()) res(t);
+      } else {
+        misses++; wiggle(t); sfx.boop();
+        if (misses >= 2) things.filter(isRight).forEach(q => q.inner.classList.add('pulse'));
+        if (wrong) await wrong(t);
+      }
+    }}));
+  });
+}
+function rowXs(n, size, gap=16, cx=W/2, maxW=W-24){
+  size = Math.min(size, (maxW-(n-1)*gap)/n);
+  const tot = n*size + (n-1)*gap;
+  return {size, xs:Array.from({length:n}, (_,i) => cx - tot/2 + size/2 + i*(size+gap))};
+}
+function cardBg(t, size){ sketch(t.core, rrD(size, size, size*.16), {fill:C.paper, sw:3.5, hatch:false}); }
+function picCard(parent, x, y, size, key){ const t=thing(parent,x,y); cardBg(t,size); DOODLE[key](at(t.core,0,0), size*.36); t.key=key; t.label=key; return t; }
+function shapeCard(parent, x, y, size, shape, color=C.sun){ const t=thing(parent,x,y); cardBg(t,size); drawShape(t.core, shape, size*.5, color); t.key=shape; t.label=shape; return t; }
+function scatter(n, x0, x1, y0, y1, minD){
+  if (x1 < x0) x1 = x0 = (x0+x1)/2;
+  if (y1 < y0) y1 = y0 = (y0+y1)/2;
+  let best = [];
+  for (let tries=0; tries<25; tries++){
+    const pts=[]; let guard=0;
+    while (pts.length<n && guard<2500){ guard++; const p=[rnd(x0,x1), rnd(y0,y1)]; if (pts.every(q=>Math.hypot(p[0]-q[0],p[1]-q[1])>=minD)) pts.push(p); }
+    if (pts.length===n) return pts;
+    if (pts.length > best.length) best = pts;
+    minD *= .9;
+  }
+  while (best.length < n) best.push([rnd(x0,x1), rnd(y0,y1)]);
+  return best;
+}
+
+/* =========================================================
+   Characters & doodle library
+   ========================================================= */
+function face(g, s, {mood='happy', mouthY=.3, blush=true} = {}){
+  const eyeY=-s*.08, ex=s*.3, er=s*.11;
+  [-1,1].forEach(k => {
+    el('ellipse', {cx:f(k*ex), cy:f(eyeY), rx:f(er*.8), ry:f(er), fill:C.ink}, g);
+    el('circle', {cx:f(k*ex+er*.3), cy:f(eyeY-er*.38), r:f(er*.32), fill:'#fff'}, g);
+    if (blush) el('ellipse', {cx:f(k*ex*1.5), cy:f(eyeY+s*.22), rx:f(s*.11), ry:f(s*.065), fill:C.gum, opacity:.85}, g);
+  });
+  const m = el('path', {stroke:C.ink, 'stroke-width':f(Math.max(2, s*.045)), 'stroke-linejoin':'round'}, g);
+  const set = md => {
+    const w=s*.26, y=s*mouthY; let d;
+    if (md==='open') d=`M${f(-w*.85)},${f(y-s*.05)} Q0,${f(y-s*.12)} ${f(w*.85)},${f(y-s*.05)} Q${f(w*.95)},${f(y+s*.3)} 0,${f(y+s*.32)} Q${f(-w*.95)},${f(y+s*.3)} ${f(-w*.85)},${f(y-s*.05)}Z`;
+    else if (md==='o') d=`M${f(-w*.45)},${f(y+s*.06)} A${f(w*.45)} ${f(w*.55)} 0 1 0 ${f(w*.45)},${f(y+s*.06)} A${f(w*.45)} ${f(w*.55)} 0 1 0 ${f(-w*.45)},${f(y+s*.06)}Z`;
+    else d=`M${f(-w)},${f(y)} Q0,${f(y+s*.28)} ${f(w)},${f(y)} Q0,${f(y+s*.1)} ${f(-w)},${f(y)}Z`;
+    m.setAttribute('d', d); m.setAttribute('fill', md==='happy' ? C.ink : '#5A1A27');
+  };
+  set(mood);
+  return {set};
+}
+function drawRocket(parent, s){
+  const g = el('g', {}, parent);
+  const fl = el('g', {class:'flame'}, g);
+  sketch(at(fl, 0, s*.8), blob(s*.24,.2,9), {fill:C.tomato, sw:3});
+  sketch(at(fl, 0, s*.72), blob(s*.13,.2,8), {fill:C.sun, sw:2.5, hatch:false});
+  sketch(g, `M${f(-s*.28)},${f(s*.18)} L${f(-s*.56)},${f(s*.66)} L${f(-s*.22)},${f(s*.58)}Z`, {fill:C.tomato, sw:4});
+  sketch(g, `M${f(s*.28)},${f(s*.18)} L${f(s*.56)},${f(s*.66)} L${f(s*.22)},${f(s*.58)}Z`, {fill:C.tomato, sw:4});
+  sketch(g, `M0,${f(-s)} C${f(s*.5)},${f(-s*.7)} ${f(s*.48)},${f(s*.2)} ${f(s*.3)},${f(s*.6)} L${f(-s*.3)},${f(s*.6)} C${f(-s*.48)},${f(s*.2)} ${f(-s*.5)},${f(-s*.7)} 0,${f(-s)}Z`, {fill:C.paper, sw:4.5});
+  sketch(g, `M0,${f(-s)} C${f(s*.24)},${f(-s*.86)} ${f(s*.34)},${f(-s*.7)} ${f(s*.39)},${f(-s*.55)} Q0,${f(-s*.64)} ${f(-s*.39)},${f(-s*.55)} C${f(-s*.34)},${f(-s*.7)} ${f(-s*.24)},${f(-s*.86)} 0,${f(-s)}Z`, {fill:C.tomato, sw:3.5});
+  const w = at(g, 0, -s*.14);
+  sketch(w, blob(s*.22,.04,10), {fill:C.lilac, sw:4});
+  face(w, s*.2, {mouthY:.28});
+  return g;
+}
+function drawCookie(parent, r){
+  const g = el('g', {}, parent);
+  sketch(g, blob(r,.07,11), {fill:C.cookie, sw:3.5});
+  for (let i=0;i<5;i++){ const a=i*1.3+rnd(0,.5), d=r*rnd(.25,.6); el('ellipse', {cx:f(Math.cos(a)*d), cy:f(Math.sin(a)*d), rx:f(r*.13), ry:f(r*.1), fill:C.choc, transform:`rotate(${f(rnd(0,90))})`}, g); }
+  return g;
+}
+function drawPlanet(parent, r, color, {stripes=false, ring=null, craters=true} = {}){
+  const g = el('g', {}, parent);
+  if (ring) sketch(at(g,0,0,1,-16), `M${f(-r*1.45)},0 A${f(r*1.45)} ${f(r*.38)} 0 0 1 ${f(r*1.45)},0`, {stroke:ring, sw:f(r*.11), double:false, hatch:false});
+  sketch(g, blob(r,.045,14), {fill:color, sw:5});
+  if (stripes){ [-.35,.05,.42].forEach(k => sketch(g, `M${f(-r*.9)},${f(r*k)} Q0,${f(r*k+r*.14)} ${f(r*.9)},${f(r*k)}`, {stroke:'rgba(120,50,20,.35)', sw:f(r*.1), double:false, boil:false})); }
+  if (craters){ [[-.5,-.45,.13],[.55,-.35,.09],[.5,.55,.11]].forEach(([x,y,k]) => el('ellipse', {cx:f(x*r), cy:f(y*r), rx:f(k*r), ry:f(k*r*.8), fill:'rgba(0,0,0,.14)'}, g)); }
+  if (ring) sketch(at(g,0,0,1,-16), `M${f(-r*1.45)},0 A${f(r*1.45)} ${f(r*.38)} 0 0 0 ${f(r*1.45)},0`, {stroke:ring, sw:f(r*.11), double:false, hatch:false});
+  return g;
+}
+function moonPhase(parent, r, fr){
+  const g = el('g', {}, parent);
+  sketch(g, blob(r,.02,16), {fill:'#3B3F7A', sw:4, hatch:false});
+  [[-.4,-.3],[.3,.4],[.1,-.55],[-.2,.5],[.5,-.1]].forEach(([x,y]) => el('circle', {cx:f(x*r), cy:f(y*r), r:f(r*.06), fill:'#5A55A8'}, g));
+  if (fr > 0){
+    let d;
+    if (fr >= 1) d = blob(r*.99,.01,16);
+    else { const k = Math.abs(1-2*fr)*r; d = `M0,${f(-r)} A${f(r)} ${f(r)} 0 0 1 0,${f(r)} A${f(k)} ${f(r)} 0 0 ${fr<.5?0:1} 0,${f(-r)}Z`; }
+    sketch(g, d, {fill:C.moon, sw:3.5});
+    if (fr >= .75) [[.3,-.3,.12],[.45,.3,.09]].forEach(([x,y,k]) => el('ellipse', {cx:f(x*r), cy:f(y*r), rx:f(k*r), ry:f(k*r*.8), fill:'rgba(0,0,0,.1)'}, g));
+  }
+  return g;
+}
+const ART = {
+  SUN(g, r){ for (let i=0;i<10;i++){ const a=i*Math.PI/5+.2; sketch(g, `M${f(Math.cos(a)*r*.72)},${f(Math.sin(a)*r*.72)} L${f(Math.cos(a)*r*1.02)},${f(Math.sin(a)*r*1.02)}`, {stroke:C.sun, sw:f(r*.13), double:false, boil:false}); }
+    sketch(g, blob(r*.62,.05,12), {fill:C.sun, sw:4.5}); return face(g, r*.6); },
+  STAR(g, r){ sketch(g, starD(r, r*.5), {fill:C.sun, sw:4.5}); return face(at(g,0,r*.08), r*.42); },
+  MOON(g, r){ sketch(g, `M${f(r*.3)},${f(-r*.95)} A${f(r)} ${f(r)} 0 1 0 ${f(r*.3)},${f(r*.95)} A${f(r*1.05)} ${f(r*1.05)} 0 0 1 ${f(r*.3)},${f(-r*.95)}Z`, {fill:C.moon, sw:4.5});
+    const fg = at(g, -r*.62, 0); el('ellipse', {cx:0, cy:f(-r*.12), rx:f(r*.06), ry:f(r*.08), fill:C.ink}, fg);
+    line(fg, `M${f(-r*.1)},${f(r*.12)} Q0,${f(r*.24)} ${f(r*.12)},${f(r*.1)}`, C.ink, 3);
+    el('ellipse', {cx:f(-r*.02), cy:f(r*.03), rx:f(r*.08), ry:f(r*.05), fill:C.gum}, fg); return {set(){}}; },
+  MARS(g, r){ drawPlanet(g, r*.85, C.tomato); return face(g, r*.8); },
+};
+const DOODLE = {
+  sun:(g,r)=>ART.SUN(g,r), star:(g,r)=>ART.STAR(g,r), moon:(g,r)=>ART.MOON(g,r),
+  rocket:(g,r)=>drawRocket(g,r*.82), cookie:(g,r)=>drawCookie(g,r*.8),
+  planet:(g,r)=>drawPlanet(g,r*.6,C.sky,{ring:C.sun,craters:false}),
+  halfmoon:(g,r)=>moonPhase(g,r*.8,.5),
+  heart:(g,r)=>sketch(g,heartD(r*.85),{fill:C.tomato}),
+  ball:(g,r)=>{ sketch(g,blob(r*.78,.03,14),{fill:C.tomato}); line(g,`M${f(-r*.76)},${f(-r*.1)} Q0,${f(r*.3)} ${f(r*.76)},${f(-r*.1)}`,C.paper,r*.1); line(g,`M${f(-r*.1)},${f(-r*.76)} Q${f(r*.3)},0 ${f(-r*.1)},${f(r*.76)}`,C.paper,r*.1); },
+  fish:(g,r)=>{ sketch(g,`M${f(r*.35)},0 L${f(r*.9)},${f(-r*.42)} L${f(r*.9)},${f(r*.42)}Z`,{fill:C.orange}); sketch(g,`M${f(-r*.85)},0 Q${f(-r*.2)},${f(-r*.75)} ${f(r*.45)},0 Q${f(-r*.2)},${f(r*.75)} ${f(-r*.85)},0Z`,{fill:C.orange}); el('circle',{cx:f(-r*.45),cy:f(-r*.08),r:f(r*.09),fill:C.ink},g); },
+  tree:(g,r)=>{ sketch(at(g,0,r*.5),rrD(r*.28,r*.7,r*.06),{fill:'#9A6440',hatch:false}); sketch(at(g,0,-r*.18),blob(r*.62,.1,11),{fill:C.mint}); },
+  cup:(g,r)=>{ line(g,`M${f(r*.45)},${f(-r*.25)} C${f(r*1)},${f(-r*.25)} ${f(r*1)},${f(r*.45)} ${f(r*.38)},${f(r*.4)}`,C.ink,r*.13); sketch(g,`M${f(-r*.6)},${f(-r*.55)} L${f(r*.6)},${f(-r*.55)} L${f(r*.45)},${f(r*.7)} L${f(-r*.45)},${f(r*.7)}Z`,{fill:C.sky}); },
+  hat:(g,r)=>{ sketch(at(g,0,-r*.15),rrD(r*1.0,r*1.0,r*.1),{fill:C.lilac}); sketch(at(g,0,r*.22),rrD(r*1.0,r*.2,r*.04),{fill:C.tomato,hatch:false}); sketch(at(g,0,r*.45),rrD(r*1.75,r*.24,r*.1),{fill:C.lilac}); },
+  car:(g,r)=>{ sketch(g,`M${f(-r*.9)},${f(r*.25)} L${f(-r*.9)},${f(-r*.02)} Q${f(-r*.85)},${f(-r*.18)} ${f(-r*.55)},${f(-r*.2)} L${f(-r*.32)},${f(-r*.55)} L${f(r*.3)},${f(-r*.55)} L${f(r*.52)},${f(-r*.2)} L${f(r*.78)},${f(-r*.18)} Q${f(r*.92)},${f(-r*.12)} ${f(r*.92)},${f(r*.05)} L${f(r*.92)},${f(r*.25)}Z`,{fill:C.tomato});
+    sketch(g,`M${f(-r*.25)},${f(-r*.46)} L${f(r*.25)},${f(-r*.46)} L${f(r*.4)},${f(-r*.22)} L${f(-r*.42)},${f(-r*.22)}Z`,{fill:C.sky,hatch:false,sw:3});
+    [-.5,.5].forEach(k=>{ sketch(at(g,r*k,r*.3),blob(r*.22,.05,9),{fill:C.ink,sw:3}); el('circle',{cx:f(r*k),cy:f(r*.3),r:f(r*.08),fill:C.paper},g); }); },
+  spoon:(g,r)=>{ line(g,`M${f(-r*.05)},${f(-r*.05)} L${f(r*.75)},${f(r*.75)}`,C.ink,r*.24); line(g,`M${f(-r*.05)},${f(-r*.05)} L${f(r*.75)},${f(r*.75)}`,'#D9DEE6',r*.13); sketch(at(g,-r*.35,-r*.35,1,-45),ovalD(r*.42,r*.3),{fill:'#D9DEE6'}); },
+  cat:(g,r)=>{ [-1,1].forEach(k=>sketch(at(g,k*r*.38,-r*.42),triD(r*.42,r*.45),{fill:C.orange})); sketch(at(g,0,r*.08),blob(r*.68,.05,12),{fill:C.orange}); face(at(g,0,r*.1),r*.55);
+    [-1,1].forEach(k=>{ line(g,`M${f(k*r*.35)},${f(r*.28)} L${f(k*r*.9)},${f(r*.18)}`,C.ink,2.5); line(g,`M${f(k*r*.35)},${f(r*.36)} L${f(k*r*.9)},${f(r*.42)}`,C.ink,2.5); }); },
+  bee:(g,r)=>{ sketch(at(g,-r*.15,-r*.48),ovalD(r*.28,r*.2),{fill:'rgba(255,255,255,.85)',hatch:false,sw:3}); sketch(at(g,r*.22,-r*.52),ovalD(r*.28,r*.2),{fill:'rgba(255,255,255,.85)',hatch:false,sw:3});
+    sketch(g,`M${f(r*.7)},0 L${f(r*.95)},${f(-r*.05)} L${f(r*.72)},${f(r*.12)}Z`,{fill:C.ink,hatch:false,sw:2});
+    sketch(g,ovalD(r*.72,r*.48),{fill:C.sun}); [-.12,.25].forEach(k=>line(g,`M${f(r*k)},${f(-r*.44)} Q${f(r*k+r*.08)},0 ${f(r*k)},${f(r*.44)}`,C.ink,r*.13));
+    el('circle',{cx:f(-r*.48),cy:f(-r*.08),r:f(r*.07),fill:C.ink},g); },
+  alien:(g,r)=>{ [-1,1].forEach(k=>{ line(g,`M${f(k*r*.25)},${f(-r*.45)} L${f(k*r*.45)},${f(-r*.9)}`,C.ink,3.5); sketch(at(g,k*r*.45,-r*.9),blob(r*.1,.1,7),{fill:C.gum,sw:2.5,hatch:false}); });
+    sketch(at(g,0,r*.1),blob(r*.68,.08,12),{fill:C.mint}); el('circle',{cx:0,cy:f(-r*.02),r:f(r*.26),fill:'#fff',stroke:C.ink,'stroke-width':3},g); el('circle',{cx:f(r*.05),cy:0,r:f(r*.12),fill:C.ink},g);
+    line(g,`M${f(-r*.2)},${f(r*.4)} Q0,${f(r*.54)} ${f(r*.2)},${f(r*.4)}`,C.ink,3); },
+  helmet:(g,r)=>{ sketch(g,blob(r*.85,.04,12),{fill:C.paper}); sketch(at(g,0,r*.05),rrD(r*1.15,r*.8,r*.3),{fill:C.sky,hatch:false}); line(g,`M${f(-r*.42)},${f(-r*.12)} Q${f(-r*.34)},${f(-r*.28)} ${f(-r*.12)},${f(-r*.28)}`,'#fff',4); },
+  comet:(g,r)=>{ [[C.sun,0],[C.gum,.2],[C.sky,-.2]].forEach(([c,o])=>line(g,`M${f(-r*.3+r*o)},${f(r*.3+r*o)} Q${f(r*.2)},${f(-r*.1+r*o)} ${f(r*.85+r*o*.5)},${f(-r*.75+r*o*.5)}`,c,r*.12)); sketch(at(g,-r*.4,r*.4),starD(r*.42),{fill:C.sun}); },
+};
+function drawPip(g, P){
+  line(g, `M0,${f(-P*.72)} L${f(P*.08)},${f(-P*.98)}`, C.ink, 3.5);
+  sketch(at(g, P*.08, -P*1.02), starD(P*.1), {fill:C.sun, sw:2.5, hatch:false});
+  sketch(at(g,0,P*.3), rrD(P*.72,P*.72,P*.28), {fill:C.lilac});
+  [-1,1].forEach(k => sketch(at(g,k*P*.46,P*.28), blob(P*.11,.08,9), {fill:C.lilac, sw:3}));
+  const hd = at(g,0,-P*.35); sketch(hd, blob(P*.38,.04,12), {fill:C.lilac}); face(hd, P*.35);
+}
+function drawSticker(parent, st, r){
+  const g = el('g', {}, parent);
+  sketch(g, blob(r,.04,12), {fill:'#fff', sw:3, hatch:false});
+  const type = typeof st === 'string' ? st : st.type;
+  if (type==='star'){ sketch(g, starD(r*.7), {fill:C.sun, sw:3.5}); face(at(g,0,r*.06), r*.3, {blush:false}); }
+  else if (type==='letter'){ sketch(g, blob(r*.68,.12,9), {fill:C.mint, sw:3.5}); txt(g, 'A', r*.8); }
+  else if (type==='doodle' && st.strokes){
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    st.strokes.forEach(s => s.pts.forEach(([x,y]) => { x0=Math.min(x0,x); y0=Math.min(y0,y); x1=Math.max(x1,x); y1=Math.max(y1,y); }));
+    const sc = (r*1.3)/Math.max(20, x1-x0, y1-y0), cx=(x0+x1)/2, cy=(y0+y1)/2;
+    st.strokes.forEach(s => line(g, 'M'+s.pts.map(([x,y]) => f((x-cx)*sc)+','+f((y-cy)*sc)).join(' L'), s.c===C.paper ? '#C9CED6' : s.c, Math.max(2.5, 10*sc)));
+  }
+  else if (DOODLE[type]) DOODLE[type](g, r*.66);
+  return g;
+}
+
+/* =========================================================
+   Sound & voice
+   ========================================================= */
+let AC = null;
+function unlockAudio(){
+  if (!AC){ try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
+  if (AC && AC.state==='suspended') AC.resume();
+}
+function tone(f0, dur, {type='sine', vol=.18, f1=null, delay=0} = {}){
+  if (!S.sound || !AC) return;
+  const t=AC.currentTime+delay, o=AC.createOscillator(), g=AC.createGain();
+  o.type=type; o.frequency.setValueAtTime(f0,t); if (f1) o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.015); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+dur+.05);
+}
+function noise(dur, {vol=.2, freq=800, q=1, f1=null, delay=0} = {}){
+  if (!S.sound || !AC) return;
+  const t=AC.currentTime+delay, len=Math.floor(AC.sampleRate*dur), b=AC.createBuffer(1,len,AC.sampleRate), d=b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  const s=AC.createBufferSource(); s.buffer=b;
+  const fl=AC.createBiquadFilter(); fl.type='bandpass'; fl.frequency.setValueAtTime(freq,t); if (f1) fl.frequency.exponentialRampToValueAtTime(f1,t+dur); fl.Q.value=q;
+  const g=AC.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(fl); fl.connect(g); g.connect(AC.destination); s.start(t); s.stop(t+dur);
+}
+const sfx = {
+  pop:(k=1)=>tone(380+k*45,.14,{f1:760+k*60,vol:.2}),
+  boop:()=>{ tone(260,.16,{type:'triangle',f1:180,vol:.16}); tone(210,.2,{type:'triangle',f1:150,vol:.12,delay:.13}); },
+  chomp:()=>{ noise(.07,{freq:600,q:.8,vol:.4}); noise(.07,{freq:450,q:.8,vol:.35,delay:.12}); },
+  whoosh:()=>noise(.7,{freq:250,f1:2600,q:.7,vol:.22}),
+  place:()=>tone(620,.13,{f1:990,vol:.18}),
+  clap:()=>{ noise(.05,{freq:1800,q:.6,vol:.45}); noise(.08,{freq:1200,q:.5,vol:.25,delay:.02}); },
+  page:()=>noise(.28,{freq:1400,f1:500,q:.4,vol:.16}),
+  scratch:()=>noise(.05,{freq:3200,q:.5,vol:.05}),
+  win:()=>[523,659,784,1047].forEach((q,i)=>tone(q,.26,{type:'triangle',vol:.15,delay:i*.09})),
+  fanfare:()=>[523,659,784,659,784,1047].forEach((q,i)=>tone(q,.32,{type:'triangle',vol:.15,delay:i*.12})),
+};
+let VOICE = null;
+const HAS_TTS = 'speechSynthesis' in window;
+function pickVoice(){
+  const vs = speechSynthesis.getVoices();
+  const pref = ['Samantha','Google US English','Karen','Moira','Tessa','Aria','Jenny','Zira'];
+  VOICE = vs.find(v => pref.some(p => v.name.includes(p)) && /^en/i.test(v.lang)) || vs.find(v => /^en[-_]/i.test(v.lang)) || null;
+}
+if (HAS_TTS){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function say(text, {interrupt=true, rate=.92, pitch=1.2} = {}){
+  return new Promise(res => {
+    if (!S.voice || !HAS_TTS || !text){ setTimeout(res, Math.min(1400, 250 + (text||'').length*45) / SPEED); return; }
+    if (interrupt) speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    if (VOICE) u.voice = VOICE; u.lang = VOICE ? VOICE.lang : 'en-US'; u.rate = rate; u.pitch = pitch;
+    let done=false; const fin=()=>{ if(!done){ done=true; res(); } };
+    u.onend=fin; u.onerror=fin; setTimeout(fin, 1600 + text.length*110);
+    speechSynthesis.speak(u);
+  });
+}
+const LETTER = {A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'eff',G:'jee',H:'aitch',I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'ar',S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zee'};
+const NUMW = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen'];
+
+/* =========================================================
+   UI chrome
+   ========================================================= */
+const ICON = {
+  speaker:'<svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="#2B2A33" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 19h8l10-8v26l-10-8H8z" fill="#6EC6FF"/><path d="M32 18q5 6 0 12M37 13q9 11 0 22"/></svg>',
+  home:'<svg viewBox="0 0 48 48" width="34" height="34" fill="none" stroke="#2B2A33" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 24 L24 8 L41 24"/><path d="M12 21 V40 H36 V21"/><path d="M21 40 V30 H27 V40" fill="#FF6B57"/></svg>',
+  again:'<svg viewBox="0 0 48 48" width="38" height="38" fill="none" stroke="#2B2A33" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M38 25a14 14 0 1 1-4.6-10.6"/><path d="M36 6v9h-9"/></svg>',
+  play:'<svg viewBox="0 0 48 48" fill="none" stroke="#2B2A33" stroke-width="3.5" stroke-linejoin="round"><path d="M16 10 L38 24 L16 38 Z" fill="#FF6B57"/></svg>',
+  prev:'<svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="#2B2A33" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M30 8 L14 24 L30 40"/></svg>',
+  next:'<svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="#2B2A33" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8 L34 24 L18 40"/></svg>',
+  gear:'<svg viewBox="0 0 48 48" width="28" height="28" fill="none" stroke="#2B2A33" stroke-width="4" stroke-linecap="round"><circle cx="24" cy="24" r="7"/><path d="M24 5v6M24 37v6M5 24h6M37 24h6M10.5 10.5l4 4M33.5 33.5l4 4M37.5 10.5l-4 4M14.5 33.5l-4 4"/></svg><svg class="ring" viewBox="0 0 66 66"><circle cx="33" cy="33" r="30" pathLength="100" transform="rotate(-90 33 33)"/></svg>'
+};
+function h(tag, cls, html){ const e=document.createElement(tag); if (cls) e.className=cls; if (html!=null) e.innerHTML=html; return e; }
+function caption(text){
+  let c = document.getElementById('cap');
+  if (!c){ c = h('div','paper'); c.id='cap'; c.setAttribute('aria-live','polite'); ui.appendChild(c); }
+  c.textContent = text; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+}
+function prompt(text, spoken=text){ caption(text); return say(spoken); }
+function gameChrome(rounds){
+  const hb = h('button','paper',ICON.home); hb.id='home'; hb.setAttribute('aria-label','Go home');
+  hb.onclick = () => { unlockAudio(); hub(); };
+  ui.appendChild(hb);
+  if (rounds > 1){
+    const pg = h('div'); pg.id='prog'; pg.innerHTML='<span></span>'.repeat(rounds); pg.setAttribute('aria-hidden','true');
+    ui.appendChild(pg);
+  }
+  const an = h('div'); an.id='answers'; ui.appendChild(an);
+}
+function setProg(n){ document.querySelectorAll('#prog span').forEach((s,i)=>s.classList.toggle('on', i<n)); }
+function askNumber(n, {alive, min=1, max=15, prompt:pt='How many?', spoken, rightSay, onWrong}){
+  return new Promise(res => {
+    const box = document.getElementById('answers'); box.innerHTML='';
+    const little = S.age==='little';
+    const pool = shuffle([n-1,n+1,n+2,n-2].filter(v => v>=min && v<=max));
+    const opts = shuffle([n, ...pool.slice(0, little?1:2)]);
+    let busy = false;
+    const ask = () => prompt(pt, spoken||pt);
+    ask();
+    opts.forEach(v => {
+      const b = h('button','num paper'); b.textContent = v; b.setAttribute('aria-label', String(v)); box.appendChild(b);
+      b.onclick = async () => {
+        if (busy || !alive()) return; busy = true; unlockAudio();
+        if (v === n){
+          b.classList.add('right'); sfx.win(); caption(String(n));
+          await say(rightSay || `Yes! ${NUMW[n]}!`); if (!alive()) return;
+          await wait(250); box.innerHTML=''; res();
+        } else {
+          b.classList.add('wiggle-h'); sfx.boop(); setTimeout(()=>b.classList.remove('wiggle-h'), 520);
+          caption("Let's check!"); await say(`That's ${NUMW[v]}. Let's count again!`);
+          if (onWrong) await onWrong(v);
+          if (!alive()) return; busy = false; ask();
+        }
+      };
+    });
+  });
+}
+
+/* =========================================================
+   Screens
+   ========================================================= */
+function newScreen(name){
+  sid++; S.screen=name; world.innerHTML=''; ui.innerHTML='';
+  if (HAS_TTS) speechSynthesis.cancel();
+  world.style.transition='none'; world.style.opacity=0;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ world.style.transition='opacity .35s'; world.style.opacity=1; }));
+  return sid;
+}
+function drawSky(){
+  sky.innerHTML='';
+  el('rect', {width:W, height:H, fill:C.space}, sky);
+  const cols=['#24357A','#19245A','#22306E','#2B3E88'];
+  for (let y=-10; y<H+30; y+=19){
+    let d=`M-20,${y}`, x=-20, up=true;
+    while (x<W+20){ x+=rnd(14,26); d+=` L${f(x)},${f(y+(up?-13:13)+rnd(-4,4))}`; up=!up; }
+    el('path', {d, fill:'none', stroke:pick(cols), 'stroke-width':f(rnd(9,15)), 'stroke-linecap':'round', 'stroke-linejoin':'round', opacity:f(rnd(.3,.6))}, sky);
+  }
+  const n = Math.round(W*H/20000);
+  for (let i=0;i<n;i++){
+    const x=rnd(0,W), y=rnd(0,H);
+    if (Math.random()<.55) el('circle', {cx:f(x), cy:f(y), r:f(rnd(1.4,3)), fill:C.paper, opacity:f(rnd(.35,.85))}, sky);
+    else el('path', {d:`M${f(x-5)},${f(y)} L${f(x+5)},${f(y)} M${f(x)},${f(y-5)} L${f(x)},${f(y+5)}`, stroke:C.paper, 'stroke-width':2, 'stroke-linecap':'round', opacity:f(rnd(.35,.8))}, sky);
+  }
+}
+function burst(x, y, n=9){
+  for (let i=0;i<n;i++){
+    const o = thing(world, x, y); sketch(o.core, starD(rnd(8,15)), {fill:pick([C.sun,C.gum,C.mint,C.sky]), sw:2.5, hatch:false, boil:false});
+    const a = i/n*Math.PI*2 + rnd(-.2,.2), d = rnd(80,170);
+    tween(700, t => { o.x=x+Math.cos(a)*d*t; o.y=y+Math.sin(a)*d*t; o.r=t*180; o.s=1-t*.4; o.g.setAttribute('opacity', f(1-t)); o.place(); }, t=>1-Math.pow(1-t,3)).then(()=>o.g.remove());
+  }
+}
+
+/* ---- start ---- */
+function startScreen(){
+  newScreen('start');
+  const land = W > H*1.05;
+  const ts = clamp(Math.min(W*.13, H*.13), 40, 96), ty = H*.17;
+  txt(world, 'Doodle Rocket', ts, {hand:true, fill:C.paper, x:W/2, y:ty});
+  line(world, `M${f(W/2-clamp(W*.3,110,280))},${f(ty+ts*.62)} q40,-12 80,0 t80,0 t80,0 t80,0 t80,0 t80,0 t80,0`, C.sun, 6);
+  const lv = h('div'); lv.id = 'levels'; lv.style.top = `${ty + ts*.95}px`;
+  lv.appendChild(h('span','lvtitle',"Who's playing?"));
+  LEVELS.forEach(([v,label]) => {
+    const b = h('button','paper lvl',label); b.setAttribute('aria-pressed', String(S.level===v));
+    b.onclick = () => { unlockAudio(); setLevel(v); S.page = v.startsWith('g') ? 5 : 0; lv.querySelectorAll('.lvl').forEach(x => x.setAttribute('aria-pressed', String(x===b))); sfx.pop(2); };
+    lv.appendChild(b);
+  });
+  ui.appendChild(lv);
+  const rs = clamp(Math.min(W,H)*.16, 60, 130);
+  const rk = thing(world, land ? W*.18 : W/2, land ? H*.62 : H*.55); rk.r = 12; rk.place(); rk.inner.classList.add('bob');
+  drawRocket(rk.core, rs);
+  const b = h('button','paper',ICON.play); b.id='play'; b.setAttribute('aria-label','Play');
+  b.onclick = () => { unlockAudio(); hub(); };
+  ui.appendChild(b);
+}
+
+/* ---- games registry & map pages ---- */
+const GAMES = {
+  stars:     {name:'Count the stars',  color:C.sun,    ring:C.tomato, icon:'t:123',  sticker:'star',    play:playStars},
+  feed:      {name:'Feed the planets', color:C.gum,    craters:true,  icon:(g,r)=>{ face(g,r,{mood:'open',mouthY:.25}); drawCookie(at(g,r*.95,r*.55),r*.28); }, sticker:'cookie', play:playFeed, init(){ S.data.planets = shuffle(PLANETS); }},
+  daynight:  {name:'Day and night',    color:C.sky,    icon:'sun',    sticker:'sun',     play:playDay},
+  bigger:    {name:'Bigger moon',      color:C.lilac,  icon:'moon',   sticker:'moon',    play:playBigger},
+  spell:     {name:'Letter rockets',   color:C.mint,   icon:'t:ABC',  sticker:'letter',  play:playSpell, init(){ S.data.words = shuffle(Object.keys(ART)).slice(0,3); }},
+  shapes:    {name:'Shape aliens',     color:C.orange, icon:'alien',  sticker:'alien',   play:playShapes},
+  moonmoods: {name:'Moon moods',       color:C.aqua,   icon:'halfmoon', sticker:'halfmoon', play:playMoonMoods},
+  suitup:    {name:'Suit up',          color:C.gum,    icon:'helmet', sticker:'helmet',  play:playSuitUp},
+  parade:    {name:'Planet parade',    color:C.tomato, icon:'planet', sticker:'planet',  play:playParade},
+  sounds:    {name:'Sound satellites', color:C.sky,    icon:'t:S s',  sticker:'bee',     play:playSounds, init(){ S.data.groups = shuffle(['S','C','H','B']).slice(0,3); }},
+  rhyme:     {name:'Rhyme rockets',    color:C.lilac,  icon:'hat',    sticker:'cat',     play:playRhyme, init(){ S.data.rhymes = shuffle(RHYMES).slice(0,3); }},
+  clap:      {name:'Clap the planets', color:C.mint,   icon:'t:clap', sticker:'planet',  play:playClap, init(){ S.data.syl = pickSyllablePlanets(); }},
+  quick:     {name:'Alien quick look', color:C.orange, icon:'alien',  sticker:'alien',   play:playQuick},
+  comets:    {name:'Comet tails',      color:C.sky,    icon:'comet',  sticker:'comet',   play:playComets},
+  trace:     {name:'Trace to launch',  color:C.sun,    icon:'rocket', sticker:'rocket',  play:playTrace, init(){ S.data.trace = shuffle(S.age==='little'?['I','L','T','O','C']:['S','A','M','N','P','C']).slice(0,3); }},
+  sort:      {name:'Station sort',     color:C.aqua,   icon:(g,r)=>{ drawShape(at(g,-r*.3,-r*.05),'circle',r*.45,C.tomato); drawShape(at(g,r*.3,r*.05),'triangle',r*.45,C.sky); }, sticker:'ball', play:playSort},
+  countdown: {name:'Countdown',        color:C.tomato, icon:'t:3 2 1', sticker:'rocket', play:playCountdown},
+  hop:       {name:'Crater hop',       color:C.lilac,  icon:'t:+1',   sticker:'heart',   play:playHop},
+  build:     {name:'Build a rocket',   color:C.sky,    icon:'rocket', sticker:'rocket',  play:playBuild},
+  name:      {name:'Name tag',         color:C.mint,   icon:'helmet', sticker:'helmet',  play:playName},
+  doodle:    {name:'Doodle pad',       color:C.gum,    icon:(g,r)=>line(g,`M${f(-r*.55)},${f(r*.1)} q${f(r*.18)},${f(-r*.5)} ${f(r*.36)},0 t${f(r*.36)},0 t${f(r*.36)},0`,C.tomato,r*.13), sticker:'star', rounds:1, play:playDoodle},
+  mathfacts: {name:'Asteroid math',    color:C.tomato, icon:'t:7+5', sticker:'star',  rounds:5, play:a => quiz(a, fresh(() => qFacts(gr())))},
+  placevalue:{name:'Place value port', color:C.mint,   icon:(g,r)=>[-1,0,1].forEach(k=>el('rect',{x:f(k*r*.3-r*.09),y:f(-r*.45),width:f(r*.18),height:f(r*.9),fill:C.sun,stroke:C.ink,'stroke-width':2.5},g)), sticker:'rocket', rounds:() => gr()>=3 ? 5 : 3, play:playPlaceValue},
+  skipcount: {name:'Skip count stars', color:C.sun,    icon:'t:5·10', sticker:'star', rounds:5, play:a => quiz(a, fresh(() => qSkip(gr())))},
+  arrays:    {name:'Array station',    color:C.aqua,   icon:(g,r)=>{ for(let i=0;i<3;i++) for(let j=0;j<3;j++) el('circle',{cx:f((j-1)*r*.3),cy:f((i-1)*r*.3),r:f(r*.1),fill:C.paper,stroke:C.ink,'stroke-width':2},g); }, sticker:'planet', rounds:5, play:a => quiz(a, fresh(() => qArray(gr())))},
+  clock:     {name:'Space clock',      color:C.lilac,  icon:(g,r)=>drawClock(g,0,0,r*.62,3,0,false), sticker:'clock', rounds:5, play:a => quiz(a, fresh(() => qClock(gr())))},
+  coins:     {name:'Moon money',       color:C.orange, icon:(g,r)=>drawCoin(g,0,0,r*.55,'q',false), sticker:'coin', rounds:5, play:a => quiz(a, fresh(() => qCoins(gr())))},
+  fractions: {name:'Pizza planets',    color:C.gum,    icon:(g,r)=>drawPizza(g,0,0,r*.6,4,3), sticker:'pizza', rounds:5, play:a => quiz(a, fresh(() => qFrac(gr())))},
+  spacefacts:{name:'Mission control',  color:C.sky,    icon:'t:?', sticker:'helmet', rounds:5, play:a => quiz(a, fresh(() => qFact(gr())))},
+  letterlab: {name:'Letter lab',       color:C.mint,   icon:'t:sh', sticker:'letter', rounds:5, play:a => quiz(a, fresh(() => qLab(gr())))},
+  sightwords:{name:'Sight word stars', color:C.sun,    icon:'t:the', sticker:'star', rounds:5, play:a => quiz(a, fresh(() => qSight(gr())))},
+  spellcheck:{name:'Spell check',      color:C.tomato, icon:'t:abc', sticker:'rocket', rounds:5, play:a => quiz(a, fresh(() => qSpell(gr())))},
+  reader:    {name:'Space reader',     color:C.lilac,  icon:'t:Aa', sticker:'comet', rounds:3, play:playReader},
+};
+const PAGES = [
+  {name:'Home Sweet Earth', games:['stars','feed','daynight','bigger']},
+  {name:'Moon Bay',         games:['spell','shapes','moonmoods','suitup']},
+  {name:'Planet Parade',    games:['parade','sounds','rhyme','clap']},
+  {name:'Star Garden',      games:['quick','comets','trace','sort']},
+  {name:'Far Out',          games:['countdown','hop','build','name','doodle']},
+  {name:'Number Nebula',    grade:true, games:['mathfacts','placevalue','skipcount','arrays']},
+  {name:'Moon Market',      grade:true, games:['clock','coins','fractions','spacefacts']},
+  {name:'Word Galaxy',      grade:true, games:['letterlab','sightwords','spellcheck','reader']},
+];
+function drawGamePlanet(g, key, pr){
+  const G = GAMES[key];
+  drawPlanet(g, pr, G.color, {ring:G.ring||null, craters:!!G.craters});
+  const ic = G.icon;
+  if (typeof ic === 'function') ic(g, pr);
+  else if (ic.startsWith('t:')){ const s = ic.slice(2); txt(g, s, pr*(s.length>3?.4:.5)); }
+  else DOODLE[ic](at(g,0,0), pr*.55);
+}
+
+/* ---- hub ---- */
+function hub(){
+  const my = newScreen('hub'); const alive = () => my===sid;
+  const page = PAGES[S.page], keys = page.games, n = keys.length;
+  const land = W > H*1.05;
+  const ts = clamp(Math.min(W*.085, H*.1), 30, 62);
+  const ty = land ? H*.1 : H*.075 + 8;
+  txt(world, page.name, ts, {hand:true, fill:C.paper, x:W/2, y:ty});
+  PAGES.forEach((_,i) => el('circle', {cx:f(W/2+(i-(PAGES.length-1)/2)*20), cy:f(ty+ts*.75), r:i===S.page?6:4, fill:i===S.page?C.sun:C.paper, opacity:i===S.page?1:.5}, world));
+  txt(world, page.grade ? `Grade ${gr()} missions` : (S.level.startsWith('g') ? 'Warm-up games' : levelName()), clamp(ts*.45, 15, 24), {hand:true, fill:C.sun, x:W/2, y:ty+ts*.75+22});
+  const pr = clamp(Math.min(W,H)*(n>4?.12:.13), 42, 100);
+  const POS = land
+    ? (n===4 ? [[.2,.42],[.4,.68],[.6,.42],[.8,.68]] : [[.17,.44],[.34,.7],[.5,.42],[.66,.7],[.83,.44]])
+    : (n===4 ? [[.33,.3],[.68,.44],[.33,.6],[.68,.74]] : [[.33,.27],[.68,.38],[.33,.5],[.68,.62],[.35,.76]]);
+  const rs = clamp(Math.min(W,H)*.065, 30, 56);
+  const rk = thing(world, land ? W*.9 : W*.86, land ? H*.13 : H*.16); rk.r=18; rk.place();
+  rk.inner.classList.add('bob'); drawRocket(rk.core, rs);
+  let busy = false;
+  keys.forEach((key, i) => {
+    const G = GAMES[key];
+    const p = thing(world, W*POS[i][0], H*POS[i][1]);
+    p.inner.classList.add('bob'); p.inner.style.animationDelay = `${-i*.9}s`;
+    drawGamePlanet(p.core, key, pr);
+    txt(p.g, G.name, clamp(pr*.36, 18, 30), {hand:true, fill:C.paper, stroke:C.space, sw:7, y:pr*1.3});
+    interact(p, {label:G.name, onTap: async () => {
+      if (busy) return; busy = true;
+      pop(p, .15); say(G.name + '!'); sfx.whoosh();
+      rk.inner.classList.remove('bob');
+      const sx=rk.x, sy=rk.y; rk.r = Math.atan2(p.y-sy, p.x-sx)*180/Math.PI + 90;
+      await tween(800, t => { rk.x=sx+(p.x-sx)*t; rk.y=sy+(p.y-sy)*t; rk.s=1-t*.6; rk.place(); });
+      if (!alive()) return;
+      world.style.opacity = 0; await wait(330);
+      if (alive()) startGame(key);
+    }});
+  });
+  // sticker tray
+  const sr = clamp(Math.min(W,H)*.045, 18, 28), step = sr*2.2, maxN = Math.max(3, Math.floor((W-110)/step));
+  const trayY = H - sr - 16;
+  if (!S.stickers.length){
+    for (let i=0;i<3;i++) sketch(at(world, 24+sr+i*step, trayY), blob(sr,.05,10), {stroke:C.paper, sw:3, dash:'3 8', boil:false});
+  } else {
+    S.stickers.slice(-maxN).forEach((st,i) => drawSticker(at(world, 24+sr+i*step, trayY, 1, st.rot), st, sr));
+  }
+  // page arrows
+  if (S.page > 0){ const b=h('button','paper pagebtn',ICON.prev); b.id='prev'; b.setAttribute('aria-label','Previous page'); b.onclick=()=>{ unlockAudio(); flip(-1); }; ui.appendChild(b); }
+  if (S.page < PAGES.length-1){ const b=h('button','paper pagebtn',ICON.next); b.id='next'; b.setAttribute('aria-label','Next page'); b.onclick=()=>{ unlockAudio(); flip(1); }; ui.appendChild(b); }
+  gearButton();
+  if (!S.greeted){ S.greeted = true; say(page.grade ? `Hi! I'm Pip. Welcome to ${page.name}! Pick a mission.` : "Hi! I'm Pip. Pick a planet to visit! Tap the arrows for more pages."); }
+}
+function flip(d){
+  const np = clamp(S.page + d, 0, PAGES.length-1);
+  if (np === S.page) return;
+  S.page = np; sfx.page(); hub(); say(PAGES[np].name + '!');
+}
+let swipe = null;
+stage.addEventListener('pointerdown', e => { if (S.screen==='hub') swipe = {x:e.clientX, y:e.clientY}; });
+addEventListener('pointerup', e => {
+  if (swipe && S.screen==='hub'){
+    const dx=e.clientX-swipe.x, dy=e.clientY-swipe.y;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)*1.5) flip(dx < 0 ? 1 : -1);
+  }
+  swipe = null;
+});
+
+/* ---- game runner ---- */
+async function startGame(key, resume=false){
+  const G = GAMES[key], rounds = typeof G.rounds==='function' ? G.rounds() : (G.rounds || 3);
+  if (!resume){ S.round = 0; S.data = {}; if (G.init) G.init(); }
+  const my = newScreen('game'); const alive = () => my===sid;
+  S.gameKey = key; gameChrome(rounds); setProg(S.round);
+  while (S.round < rounds){
+    await G.play(alive);
+    if (!alive()) return;
+    S.round++; setProg(S.round); sfx.win(); burst(W/2, H*.55);
+    await wait(1200);
+    if (!alive()) return;
+  }
+  celebrate(key);
+}
+
+/* =========================================================
+   MATH GAMES
+   ========================================================= */
+
+/* ---- Count the stars ---- */
+function playStars(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const n = randInt(little?2:4, little?5:10);
+    const R = clamp(Math.min(W,H)*.085, 30, 60);
+    const pts = scatter(n, R*1.9, W-R*1.9, TOP+R*1.4, H-150-R, R*2.6);
+    const lineL = el('g', {}, world), starL = el('g', {}, world);
+    const stars = pts.map(([x,y]) => {
+      const o = thing(starL, x, y);
+      el('circle', {r:f(R*1.2), fill:'transparent'}, o.core);
+      o.empty = sketch(o.core, starD(R), {fill:'rgba(255,255,255,.07)', hatch:false, stroke:C.paper, sw:4, dash:'2 9'});
+      o.inner.classList.add('breathe'); o.inner.style.animationDelay = `${-rnd(0,2)}s`;
+      appear(o);
+      return o;
+    });
+    let count = 0, prev = null; const order = [];
+    prompt('Tap each star!', 'Tap each star, and count with me!');
+    stars.forEach(o => interact(o, {label:'star', onTap: async () => {
+      if (!alive()) return;
+      if (o.done){ wiggle(o); sfx.boop(); return; }
+      o.done = true; count++; const k = count; order.push(o);
+      o.inner.classList.remove('breathe'); o.empty.remove();
+      sketch(o.core, starD(R), {fill:C.sun, sw:4.5});
+      face(at(o.core, 0, R*.08), R*.42, {blush:false});
+      const b = at(o.g, R*.9, -R*.85); sketch(b, blob(R*.42,.06,9), {fill:C.paper, sw:3, hatch:false}); txt(b, k, R*.5);
+      if (prev){
+        const ln = el('path', {d:`M${f(prev.x)},${f(prev.y)} L${f(o.x)},${f(o.y)}`, stroke:C.paper, 'stroke-width':4, 'stroke-linecap':'round', opacity:.75, fill:'none', pathLength:1, 'stroke-dasharray':1, 'stroke-dashoffset':1}, lineL);
+        tween(350, t => ln.setAttribute('stroke-dashoffset', f(1-t)), lin);
+      }
+      prev = o; sfx.pop(k); say(NUMW[k] || String(k), {rate:1}); pop(o, .35);
+      if (k === n){
+        stars.forEach(s => s.locked = true);
+        await wait(900); if (!alive()) return;
+        await askNumber(n, {alive, prompt:'How many stars?', spoken:'How many stars did we count?', rightSay:`Yes! ${NUMW[n]} stars!`,
+          onWrong: async () => { for (let i=0;i<order.length;i++){ if (!alive()) return; pop(order[i], .35); sfx.pop(i+1); await say(NUMW[i+1], {rate:1.05}); } }});
+        if (!alive()) return;
+        lineL.querySelectorAll('path').forEach(p => { p.setAttribute('stroke', C.sun); p.setAttribute('opacity', 1); });
+        resolve();
+      }
+    }}));
+  });
+}
+
+/* ---- Feed the planets ---- */
+const PLANETS = [{name:'Mars',c:C.tomato},{name:'Neptune',c:C.sky},{name:'Jupiter',c:C.orange,stripes:true},{name:'Pluto',c:C.lilac},{name:'Venus',c:C.sun}];
+function playFeed(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const n = randInt(little?1:2, little?3:6);
+    const pl = S.data.planets[S.round % S.data.planets.length];
+    const cr = clamp(Math.min(W,H)*.09, 34, 50), cstep = cr*2.45;
+    const m = n + (little?2:3);
+    const perRow = Math.max(3, Math.floor((W-30)/cstep)), rows = Math.ceil(m/perRow);
+    const trayTop = H - rows*cstep - 16;
+    const pr = clamp(Math.min(W*.28, (trayTop-TOP)*.36), 55, 150);
+    const land = W > H*1.1;
+    const px = land ? W*.38 : W*.4, py = (TOP + trayTop)/2 + 6;
+    const planet = thing(world, px, py);
+    planet.inner.classList.add('bob');
+    drawPlanet(planet.core, pr, pl.c, {stripes:pl.stripes});
+    const fc = face(planet.core, pr, {mood:'open', mouthY:.25});
+    const mx = px, my = py + pr*.36;
+    const bw = clamp(Math.min(W*.26, pr*1.3), 92, 180), bh = bw*.95;
+    const bx = Math.min(W - bw/2 - 12, px + pr + bw/2 - pr*.1), by = Math.max(TOP + bh/2 - 20, py - pr*.6);
+    const bub = at(world, bx, by);
+    sketch(bub, `M${f(-bw*.35)},${f(bh*.44)} L${f(-bw*.62)},${f(bh*.66)} L${f(-bw*.12)},${f(bh*.46)}`, {fill:C.paper, sw:3, hatch:false});
+    sketch(bub, rrD(bw, bh, bw*.2), {fill:C.paper, sw:3.5, hatch:false});
+    txt(bub, n, bh*.42, {y:-bh*.18});
+    const dr = bw*.09, dots = [];
+    for (let i=0;i<n;i++){
+      const row = Math.floor(i/3), col = i%3, inRow = Math.min(3, n - row*3);
+      dots.push(el('circle', {cx:f((col-(inRow-1)/2)*dr*2.6), cy:f(bh*.16 + row*dr*2.5), r:f(dr), fill:'none', stroke:C.ink, 'stroke-width':2.5, 'stroke-dasharray':'2 4'}, bub));
+    }
+    const cookies = [];
+    for (let i=0;i<m;i++){
+      const row = Math.floor(i/perRow), inRow = Math.min(perRow, m-row*perRow), col = i%perRow;
+      const c = thing(world, W/2 + (col-(inRow-1)/2)*cstep + rnd(-4,4), trayTop + cstep/2 + row*cstep + rnd(-4,4));
+      c.hx = c.x; c.hy = c.y; c.r = rnd(-15,15);
+      el('circle', {r:f(cr*1.15), fill:'transparent'}, c.core);
+      drawCookie(c.core, cr);
+      appear(c, i*40);
+      cookies.push(c);
+    }
+    let reserved = 0, eaten = 0;
+    const word = k => k===1 ? 'cookie' : 'cookies';
+    const feed = async c => {
+      if (c.eaten || reserved >= n || !alive()) return;
+      c.eaten = true; c.locked = true; reserved++;
+      if (reserved >= n) cookies.forEach(q => q.locked = true);
+      fc.set('o');
+      const sx=c.x, sy=c.y, ss=c.s;
+      await tween(430, t => { c.x=sx+(mx-sx)*t; c.y=sy+(my-sy)*t - Math.sin(t*Math.PI)*70; c.s=ss*(1-t*.7); c.r+=6; c.place(); });
+      if (!alive()) return;
+      c.g.remove(); sfx.chomp(); fc.set('happy'); pop(planet, .08);
+      eaten++; const k = eaten;
+      dots[k-1].setAttribute('fill', C.tomato); dots[k-1].removeAttribute('stroke-dasharray');
+      say(NUMW[k], {rate:1});
+      await wait(350); if (!alive()) return;
+      if (eaten < n){ fc.set('open'); return; }
+      await wait(350); if (!alive()) return;
+      cookies.forEach(q => { if (!q.eaten) q.g.setAttribute('opacity', .35); });
+      caption(`Yum! ${n} ${word(n)}!`);
+      await say(`Yum yum! ${NUMW[n]} ${word(n)}! I'm full!`);
+      if (alive()) resolve();
+    };
+    cookies.forEach(c => interact(c, {label:'cookie', drag:true, onTap:() => feed(c), onDrop:() => {
+      if (Math.hypot(c.x-mx, c.y-my) < pr*.95) feed(c); else flyTo(c, c.hx, c.hy, 1, 350);
+    }}));
+    await prompt(`${pl.name} wants ${n} ${word(n)}`, `${pl.name} is hungry! ${pl.name} wants ${NUMW[n]} ${word(n)}.`);
+  });
+}
+
+/* ---- Bigger moon (compare sizes and quantities) ---- */
+function playBigger(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const mode = little ? (S.round<2 ? 'bigger' : 'smaller') : ['bigger','more','more'][S.round % 3];
+    const land = W > H*1.05;
+    const cx = land ? [W*.3, W*.7] : [W/2, W/2];
+    const cy = land ? [(TOP+H)/2+10, (TOP+H)/2+10] : [TOP+(H-TOP)*.27, TOP+(H-TOP)*.72];
+    const room = land ? Math.min(W*.19, (H-TOP)*.38) : Math.min(W*.4, (H-TOP)*.21);
+    let things, rightIdx;
+    if (mode !== 'more'){
+      const sizes = shuffle([room*.95, room*rnd(.42,.55)]);
+      rightIdx = mode==='bigger' ? (sizes[0]>sizes[1]?0:1) : (sizes[0]<sizes[1]?0:1);
+      things = [0,1].map(i => {
+        const t = thing(world, cx[i], cy[i]); const r = sizes[i];
+        t.inner.classList.add('bob'); t.inner.style.animationDelay = `${-i*1.2}s`;
+        el('circle', {r:f(r*1.1), fill:'transparent'}, t.core);
+        sketch(t.core, blob(r,.03,14), {fill:C.moon, sw:4.5});
+        [[-.45,-.35,.14],[.4,.4,.1],[.5,-.25,.08]].forEach(([x,y,k]) => el('ellipse', {cx:f(x*r), cy:f(y*r), rx:f(k*r), ry:f(k*r*.8), fill:'rgba(0,0,0,.08)'}, t.core));
+        const s = r*.55, eyes = el('g', {}, t.core);
+        [-1,1].forEach(k => line(eyes, `M${f(k*s*.45-s*.15)},${f(-s*.1)} Q${f(k*s*.45)},${f(s*.05)} ${f(k*s*.45+s*.15)},${f(-s*.1)}`, C.ink, 3));
+        line(t.core, `M${f(-s*.15)},${f(s*.35)} Q0,${f(s*.45)} ${f(s*.15)},${f(s*.35)}`, C.ink, 3);
+        const z = txt(t.core, 'z z', Math.max(18, r*.35), {hand:true, fill:C.paper, x:r*.85, y:-r*.85});
+        t.wake = () => { eyes.innerHTML=''; [-1,1].forEach(k => el('circle', {cx:f(k*s*.45), cy:f(-s*.08), r:f(Math.max(3,s*.1)), fill:C.ink}, eyes)); z.remove(); };
+        t.label = 'moon'; appear(t, i*120);
+        return t;
+      });
+    } else {
+      let a, b;
+      do { a = randInt(1, 7); b = randInt(1, 8); } while (a===b || Math.abs(a-b) < (S.round===2 ? 1 : 2));
+      const counts = [a, b]; rightIdx = a > b ? 0 : 1;
+      things = [0,1].map(i => {
+        const t = thing(world, cx[i], cy[i]);
+        sketch(t.core, ovalD(room*1.05, room*.85, .08), {fill:'rgba(182,156,255,.3)', stroke:C.paper, sw:3.5, hatch:false});
+        scatter(counts[i], -room*.68, room*.68, -room*.5, room*.5, room*.42).forEach(([x,y]) => sketch(at(t.core,x,y), starD(room*.15), {fill:C.sun, sw:3}));
+        t.n = counts[i]; t.label = `cloud with stars`; appear(t, i*120);
+        return t;
+      });
+    }
+    const q = mode==='bigger' ? 'Wake up the bigger moon!' : mode==='smaller' ? 'Wake up the smaller moon!' : 'Which cloud has more stars?';
+    prompt(q);
+    await choose(things, {alive, isRight:t => t===things[rightIdx],
+      right: async t => {
+        sfx.win(); pop(t, .15); if (t.wake) t.wake();
+        if (mode==='more'){ caption(`${t.n} is more!`); await say(`Yes! ${NUMW[t.n]} stars is more than ${NUMW[things[1-rightIdx].n]}.`); }
+        else { caption('Good morning, moon!'); await say(`Yes! That's the ${mode} moon. Good morning, moon!`); }
+      },
+      wrong: async t => { await say(mode==='more' ? `That cloud has ${NUMW[t.n]} stars. Look again!` : `Hmm, look again. Which moon is ${mode}?`); }});
+    if (alive()) resolve();
+  });
+}
+
+/* ---- Alien quick look (subitizing) ---- */
+const DICE = {1:[[0,0]],2:[[-.5,-.5],[.5,.5]],3:[[-.55,-.55],[0,0],[.55,.55]],4:[[-.5,-.5],[.5,-.5],[-.5,.5],[.5,.5]],5:[[-.55,-.55],[.55,-.55],[0,0],[-.55,.55],[.55,.55]]};
+function playQuick(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little', max = little ? 3 : 5;
+    let n; do { n = randInt(1, max); } while (n === S.data.lastQ); S.data.lastQ = n;
+    const ar = clamp(Math.min(W*.3, (H-TOP-150)*.42), 70, 160);
+    const a = thing(world, W/2, TOP + (H-TOP-140)/2 + ar*.1); a.inner.classList.add('bob');
+    [-1,1].forEach(k => { line(a.core, `M${f(k*ar*.3)},${f(-ar*.8)} L${f(k*ar*.5)},${f(-ar*1.15)}`, C.ink, 4); sketch(at(a.core,k*ar*.5,-ar*1.18), blob(ar*.09,.1,7), {fill:C.gum, sw:3, hatch:false}); });
+    sketch(a.core, ovalD(ar*.85, ar*1.0, .05), {fill:C.mint, sw:5});
+    face(at(a.core, 0, -ar*.5), ar*.55, {mouthY:.25});
+    const belly = at(a.core, 0, ar*.3);
+    sketch(belly, blob(ar*.42,.03,12), {fill:C.paper, hatch:false, sw:3.5});
+    const dotsG = el('g', {}, belly), k = ar*.38;
+    DICE[n].forEach(([x,y]) => el('circle', {cx:f(x*k), cy:f(y*k), r:f(ar*.075), fill:C.tomato, stroke:C.ink, 'stroke-width':2.5}, dotsG));
+    const lid = at(belly, 0, 0); sketch(lid, blob(ar*.44,.03,12), {fill:C.lilac, sw:3.5}); txt(lid, '?', ar*.38);
+    const show = async ms => { lid.setAttribute('opacity', 0); sfx.pop(2); await wait(ms); lid.setAttribute('opacity', 1); sfx.pop(1); };
+    await prompt('Quick! Look at the dots!', 'Quick look! How many dots on my tummy?');
+    if (!alive()) return; await wait(250);
+    await show(little ? 2200 : 1400); if (!alive()) return;
+    await askNumber(n, {alive, min:1, max, prompt:'How many dots?', spoken:'How many dots did you see?', rightSay:`Yes! ${NUMW[n]}!`,
+      onWrong: async () => {
+        lid.setAttribute('opacity', 0); const ds = [...dotsG.children];
+        for (let i=0;i<ds.length;i++){ if (!alive()) return; ds[i].setAttribute('fill', C.sun); sfx.pop(i+1); await say(NUMW[i+1], {rate:1.05}); }
+        await wait(400); ds.forEach(d => d.setAttribute('fill', C.tomato)); lid.setAttribute('opacity', 1);
+      }});
+    if (!alive()) return;
+    lid.setAttribute('opacity', 0); pop(a, .1); resolve();
+  });
+}
+
+/* ---- Countdown (count backward) ---- */
+function playCountdown(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const start = little ? [3,4,5][S.round%3] : [5,8,10][S.round%3];
+    const land = W > H*1.1, rs = clamp(Math.min(W,H)*.14, 50, 105);
+    const rx = land ? W*.17 : W/2, ry = land ? (TOP+H)/2 + rs*.2 : TOP + rs + 8;
+    line(world, `M${f(rx-rs*.9)},${f(ry+rs*.95)} L${f(rx+rs*.9)},${f(ry+rs*.95)}`, C.paper, 6);
+    const rk = thing(world, rx, ry); drawRocket(rk.core, rs);
+    const nums = []; for (let v=start; v>=0; v--) nums.push(v);
+    const br = clamp(Math.min(W,H)*.075, 32, 48);
+    const x0 = land ? W*.34 : br+14, x1 = W-br-14, y0 = land ? TOP+br : ry+rs*1.05+br+14, y1 = H-br-18;
+    let pts;
+    if (little){
+      const per = Math.max(1, Math.min(nums.length, Math.floor((x1-x0)/(br*2.6))+1));
+      const rows = Math.ceil(nums.length/per), gy = rows>1 ? Math.min(br*2.7, (y1-y0)/(rows-1)) : 0;
+      pts = nums.map((_,i) => { const r=Math.floor(i/per), c=i%per, inRow=Math.min(per, nums.length-r*per); return [(x0+x1)/2 + (c-(inRow-1)/2)*br*2.6, rows>1 ? y0+r*gy : (y0+y1)/2]; });
+    } else pts = scatter(nums.length, x0, x1, y0, y1, br*2.4);
+    const btns = nums.map((v,i) => { const b=thing(world, pts[i][0], pts[i][1]); b.v=v; b.art=sketch(b.core, blob(br,.06,11), {fill:C.paper, sw:3.5, hatch:false}); txt(b.core, v, br*1.05); appear(b, i*40); return b; });
+    let next = start, misses = 0;
+    const mark = () => btns.forEach(b => b.inner.classList.toggle('pulse', b.v===next && (little || misses>=1)));
+    mark();
+    prompt(`Count down from ${start}!`, `Let's count down from ${NUMW[start]} and blast off! Tap ${NUMW[start]}.`);
+    btns.forEach(b => interact(b, {label:String(b.v), onTap: async () => {
+      if (!alive() || b.done) return;
+      if (b.v !== next){ misses++; wiggle(b); sfx.boop(); mark(); caption(`Find ${next}`); say(`Find ${NUMW[next]}`); return; }
+      b.done = true; b.locked = true; b.art.fp.setAttribute('fill', C.sun); pop(b, .3); sfx.pop(start-next+1); wiggle(rk);
+      const v = next; next--; misses = 0; mark();
+      if (v > 0){ caption(String(v)); say(NUMW[v], {rate:1}); return; }
+      btns.forEach(q => q.locked = true);
+      caption('Blast off!'); sfx.whoosh(); say('Zero! Blast off!');
+      const sy = rk.y; await tween(1300, t => { rk.y = sy - (sy+rs*2)*t; rk.place(); }, t => t*t);
+      if (alive()) resolve();
+    }}));
+  });
+}
+
+/* ---- Crater hop (number line, one more / one less) ---- */
+function playHop(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const N = little ? 5 : (W > 600 ? 10 : 7);
+    const mode = little ? 'hopTo' : ['hopTo','more','less'][S.round % 3];
+    const mx = 34, stepX = (W - mx*2)/N;
+    const cr = clamp(stepX*.36, 16, 42);
+    const base = Math.min(H*.68, H - cr*3 - 30);
+    const gy = x => base - Math.sin(Math.PI * x / W) * Math.min(90, H*.08);
+    sketch(world, `M-20,${f(base+cr*.4)} Q${f(W/2)},${f(base - Math.min(90,H*.08)*2 + cr*.4)} ${f(W+20)},${f(base+cr*.4)} L${f(W+20)},${f(H+20)} L-20,${f(H+20)}Z`, {fill:'#CFC8EA', boil:false, double:false});
+    const craters = [];
+    for (let i=0;i<=N;i++){
+      const x = mx + i*stepX, y = gy(x) + cr*.6;
+      const c = thing(world, x, y); c.v = i;
+      el('circle', {r:f(cr*1.3), fill:'transparent'}, c.core);
+      sketch(c.core, ovalD(cr, cr*.42, .06), {fill:'#9E93C8', sw:3});
+      txt(c.core, i, clamp(cr*.95, 16, 34), {y:cr*1.05});
+      c.label = `crater ${i}`; craters.push(c);
+    }
+    const P = clamp(cr*1.5, 30, 60);
+    const pipAt = i => [craters[i].x, craters[i].y - P*.95];
+    let pos = mode==='hopTo' ? 0 : (mode==='more' ? randInt(1, N-1) : randInt(2, N));
+    const pip = thing(world, ...pipAt(pos)); drawPip(pip.core, P);
+    const hopTo = async i => { const [x,y] = pipAt(i), sx=pip.x, sy=pip.y; sfx.pop(3); await tween(420, t => { pip.x=sx+(x-sx)*t; pip.y=sy+(y-sy)*t - Math.sin(t*Math.PI)*P*1.2; pip.place(); }, lin); pos = i; };
+    if (mode === 'hopTo'){
+      const target = randInt(2, N);
+      const flag = at(world, craters[target].x + cr*.2, craters[target].y - cr*.2);
+      line(flag, `M0,0 L0,${f(-P*1.6)}`, C.ink, 3.5);
+      sketch(flag, `M0,${f(-P*1.6)} L${f(P*.7)},${f(-P*1.35)} L0,${f(-P*1.1)}Z`, {fill:C.sun, sw:3});
+      let busy = false;
+      prompt(`Hop to ${target}!`, `Tap Pip to hop. Hop all the way to ${NUMW[target]}!`);
+      pip.inner.classList.add('pulse');
+      interact(pip, {label:'Pip. Tap to hop', onTap: async () => {
+        if (busy || !alive() || pos >= target) return; busy = true;
+        pip.inner.classList.remove('pulse');
+        await hopTo(pos+1); if (!alive()) return;
+        say(NUMW[pos], {rate:1}); pop(craters[pos], .2);
+        if (pos === target){
+          pip.locked = true; sfx.win(); caption(`${target} hops!`);
+          await say(`${NUMW[target]} hops! You made it!`);
+          if (alive()) resolve();
+        }
+        busy = false;
+      }});
+    } else {
+      const target = mode==='more' ? pos+1 : pos-1;
+      const q = mode==='more' ? 'One more hop!' : 'One hop back!';
+      prompt(`${q} Where will Pip land?`, `Pip is on ${NUMW[pos]}. ${mode==='more' ? 'If Pip hops one more' : 'If Pip hops back one'}, where will Pip land? Tap the crater.`);
+      await choose(craters, {alive, isRight:c => c.v===target,
+        right: async () => { await hopTo(target); if (!alive()) return; sfx.win(); caption(`${target}!`); await say(mode==='more' ? `Yes! One more than ${NUMW[target-1]} is ${NUMW[target]}!` : `Yes! One less than ${NUMW[target+1]} is ${NUMW[target]}!`); },
+        wrong: async c => { await say(`That's ${NUMW[c.v]}. Pip is on ${NUMW[pos]}. ${mode==='more' ? 'Count one more' : 'Count back one'}!`); }});
+      if (alive()) resolve();
+    }
+  });
+}
+
+/* ---- Shape aliens ---- */
+function playShapes(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const pool = little ? ['circle','square','triangle'] : ['circle','square','triangle','star','rectangle','oval','heart','hexagon'];
+    if (!S.data.shapes) S.data.shapes = shuffle(pool);
+    const target = S.data.shapes[S.round % S.data.shapes.length];
+    const nOpts = little ? (S.round===0 ? 2 : 3) : 4;
+    const opts = shuffle([target, ...shuffle(pool.filter(p => p!==target)).slice(0, nOpts-1)]);
+    const name = ['Zib','Bop','Nix'][S.round % 3], col = [C.mint, C.gum, C.sky][S.round % 3];
+    const cardS = clamp(Math.min(W/(nOpts+.8), H*.17), 70, 130), cardY = H - cardS/2 - 22;
+    const areaH = cardY - cardS/2 - TOP - 20;
+    const u = clamp(Math.min(W*.22, areaH*.3), 45, 110);
+    const bodyShape = pick(['oval','rectangle','circle'].filter(s => s!==target));
+    const bodyH = u*1.3*((SHAPE_WH[bodyShape]||[1,1])[1]);
+    const ax = W/2, ay = TOP + areaH*.62 + 14;
+    const alien = thing(world, ax, ay); alien.inner.classList.add('bob');
+    [-1,1].forEach(k => { line(alien.core, `M${f(k*u*.3)},${f(bodyH*.4)} L${f(k*u*.45)},${f(bodyH*.5+u*.5)}`, C.ink, 5); line(alien.core, `M${f(k*u*.6)},0 L${f(k*u*1.1)},${f(-u*.35)}`, C.ink, 5); });
+    drawShape(alien.core, bodyShape, u*1.3, col);
+    const hy = -bodyH/2 - u*.42;
+    const slot = at(alien.core, 0, hy);
+    const ghost = drawShape(slot, target, u, null, {stroke:C.paper, sw:3.5, dash:'3 9'});
+    prompt(`Find the ${target}!`, `${name} needs a new head! Find the ${target}.`);
+    const { size, xs } = rowXs(nOpts, cardS, 16);
+    const cards = opts.map((s,i) => { const c = shapeCard(world, xs[i], cardY, size, s, C.sun); appear(c, i*80); return c; });
+    await choose(cards, {alive, isRight:c => c.key===target,
+      right: async c => {
+        const fly = thing(world, c.x, c.y); drawShape(fly.core, target, size*.5, col);
+        c.g.setAttribute('opacity', .35); sfx.place();
+        await flyTo(fly, ax, ay + hy, u/(size*.5), 450, easeInOut);
+        if (!alive()) return;
+        fly.g.remove(); ghost.remove(); drawShape(slot, target, u, col); face(slot, u*.45, {mouthY:.2});
+        pop(alien, .12); sfx.win(); caption(`${cap1(art_(target))} ${target}!`);
+        await say(`${cap1(art_(target))} ${target}! ${name} loves the new ${target} head!`);
+      },
+      wrong: async c => { await say(`That's ${art_(c.key)} ${c.key}. Find the ${target}!`); }});
+    if (alive()) resolve();
+  });
+}
+
+/* ---- Comet tails (patterns) ---- */
+const TOK = [{c:C.tomato,s:'circle',w:'red'},{c:C.sun,s:'star',w:'yellow'},{c:C.sky,s:'triangle',w:'blue'},{c:C.mint,s:'heart',w:'green'}];
+function playComets(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const type = little ? 'AB' : ['AB','AAB','ABC'][S.round % 3];
+    const toks = shuffle(TOK), map = {A:toks[0], B:toks[1], C:toks[2]};
+    const unit = type.split('').map(ch => map[ch]);
+    const L = 7, blanks = little ? 1 : (S.round===0 ? 1 : 2);
+    const full = Array.from({length:L}, (_,i) => unit[i % unit.length]);
+    const shown = L - blanks;
+    const headR = clamp(Math.min(W,H)*.075, 28, 55);
+    const cardS = clamp(Math.min(W/4.2, H*.17), 70, 120), cardY = H - cardS/2 - 22;
+    const rowY = TOP + (cardY - cardS/2 - TOP)/2;
+    const cm = thing(world, 0, 0);
+    const hx = headR + 16, sp = (W - hx - headR - 20)/L, tr = clamp(sp*.36, 14, 34);
+    const xs = Array.from({length:L}, (_,i) => hx + headR + sp*(i+.5));
+    line(cm.core, `M${f(hx)},${f(rowY-tr*.9)} L${f(W-8)},${f(rowY-tr*1.4)}`, 'rgba(255,253,246,.25)', 6);
+    line(cm.core, `M${f(hx)},${f(rowY+tr*.9)} L${f(W-8)},${f(rowY+tr*1.4)}`, 'rgba(255,253,246,.25)', 6);
+    const head = at(cm.core, hx, rowY); sketch(head, blob(headR,.08,11), {fill:C.paper}); face(head, headR*.8);
+    for (let i=0;i<shown;i++) drawShape(at(cm.core, xs[i], rowY), full[i].s, tr*2, full[i].c);
+    const slots = [];
+    for (let i=shown;i<L;i++){ const g=at(cm.core, xs[i], rowY); sketch(g, blob(tr*1.1,.04,12), {stroke:C.paper, sw:3, dash:'3 8'}); slots.push(g); }
+    let optToks = [...new Set(unit)];
+    if (!little && optToks.length < 3) optToks.push(toks.find(t => !optToks.includes(t)));
+    optToks = shuffle(optToks);
+    const { size, xs:cx } = rowXs(optToks.length, cardS, 18);
+    const cards = optToks.map((t,i) => { const c = shapeCard(world, cx[i], cardY, size, t.s, t.c); c.tok = t; c.label = `${t.w} ${t.s}`; appear(c, i*80); return c; });
+    let idx = shown, misses = 0;
+    const said = full.slice(0, shown).map(t => t.w).join(', ');
+    prompt('What comes next?', `${said}... What comes next?`);
+    cards.forEach(c => interact(c, {label:c.label, onTap: async () => {
+      if (!alive() || idx >= L) return;
+      if (c.tok !== full[idx]){
+        misses++; wiggle(c); sfx.boop();
+        if (misses >= 2) cards.forEach(q => q.inner.classList.toggle('pulse', q.tok === full[idx]));
+        say(`Hmm. Say it with me: ${full.slice(Math.max(0, idx-unit.length*2), idx).map(t=>t.w).join(', ')}...`);
+        return;
+      }
+      misses = 0; cards.forEach(q => q.inner.classList.remove('pulse'));
+      const i = idx; idx++;
+      const fly = thing(world, c.x, c.y); drawShape(fly.core, c.tok.s, size*.5, c.tok.c);
+      sfx.place(); await flyTo(fly, xs[i], rowY, (tr*2)/(size*.5), 380, easeInOut);
+      if (!alive()) return;
+      fly.g.remove(); slots[i-shown].innerHTML=''; drawShape(slots[i-shown], c.tok.s, tr*2, c.tok.c);
+      say(c.tok.w, {rate:1});
+      if (idx < L) return;
+      cards.forEach(q => q.locked = true);
+      await wait(400); if (!alive()) return;
+      caption('Zoom!'); sfx.whoosh();
+      say(full.map(t => t.w).join(', ') + '! Zoom!');
+      await tween(1400, t => { cm.x = -W*1.1*t; cm.place(); }, t => t*t);
+      if (alive()) resolve();
+    }}));
+  });
+}
+
+/* ---- Station sort ---- */
+const SORT_COLORS = [{c:C.tomato,w:'red'},{c:C.sky,w:'blue'},{c:C.sun,w:'yellow'}];
+function playSort(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const rule = little ? ['color','shape','size'][S.round % 3] : ['color3','shape3','size'][S.round % 3];
+    let cats;
+    if (rule.startsWith('color')) cats = SORT_COLORS.slice(0, rule==='color3' ? 3 : 2).map(o => ({label:o.w, c:o.c}));
+    else if (rule.startsWith('shape')) cats = ['circle','triangle','square'].slice(0, rule==='shape3' ? 3 : 2).map(s => ({label:s, s}));
+    else cats = [{label:'big', big:true}, {label:'small', big:false}];
+    const k = cats.length, m = little ? 4 : 6;
+    const itemCats = shuffle(Array.from({length:m}, (_,i) => i % k));
+    const bw = Math.min(170, (W-30)/k - 14), bhh = bw*.72, binY = H - bhh/2 - 22;
+    const { xs } = rowXs(k, bw, 14);
+    const bins = cats.map((ct, i) => {
+      const b = thing(world, xs[i], binY); b.cat = i; b.label = `${ct.label} box`; b.count = 0;
+      sketch(b.core, rrD(bw, bhh, bw*.1), {fill:'#E8E4F7', sw:4});
+      const ic = at(b.core, 0, -bhh*.12), is = bhh*.42;
+      if (ct.c) sketch(ic, blob(is*.5,.1,10), {fill:ct.c, sw:3});
+      else if (ct.s) drawShape(ic, ct.s, is, C.paper);
+      else sketch(ic, blob(is*(ct.big?.55:.24),.05,10), {fill:'#A7A9BE', sw:3});
+      txt(b.core, ct.label, clamp(bw*.16, 16, 24), {hand:true, y:bhh*.3});
+      return b;
+    });
+    const cxI = W/2, cyI = TOP + (binY - bhh/2 - TOP)/2;
+    const isz = clamp(Math.min(W,H)*.16, 56, 110);
+    sketch(at(world, cxI, cyI), blob(isz*1.05,.04,14), {stroke:C.paper, sw:3, dash:'4 10', boil:false});
+    const shapesAny = ['circle','triangle','square','star'], colorsAny = [C.tomato, C.sky, C.sun, C.mint, C.gum];
+    const intro = rule.startsWith('color') ? 'Sort by color!' : rule.startsWith('shape') ? 'Sort by shape!' : 'Sort big and small!';
+    await prompt(intro, `${intro} Where does each one go?`);
+    let current = null, misses = 0, waiter = null;
+    bins.forEach(b => interact(b, {label:b.label, onTap: async () => {
+      if (!alive() || !current || current.busy) return;
+      if (b.cat !== current.cat){
+        misses++; wiggle(b); wiggle(current.t); sfx.boop();
+        if (misses >= 2) bins.forEach(q => q.inner.classList.toggle('pulse', q.cat === current.cat));
+        say(`That's the ${cats[b.cat].label} box. Try another one!`);
+        return;
+      }
+      current.busy = true; misses = 0; bins.forEach(q => q.inner.classList.remove('pulse'));
+      const t = current.t, slot = b.count++;
+      sfx.place();
+      await flyTo(t, b.x - bw*.3 + (slot%4)*bw*.2, b.y + bhh*.05 - Math.floor(slot/4)*10, .32, 420, easeInOut);
+      say(`${cap1(cats[b.cat].label)}!`, {rate:1});
+      const w = waiter; waiter = null; current = null; w && w();
+    }}));
+    for (let i=0;i<m;i++){
+      if (!alive()) return;
+      const ci = itemCats[i], ct = cats[ci];
+      const shape = ct.s || pick(shapesAny), color = ct.c || pick(colorsAny), sc = ct.big===false ? .5 : 1;
+      const t = thing(world, cxI, cyI); drawShape(t.core, shape, isz*sc, color); appear(t);
+      current = {t, cat:ci};
+      const desc = rule.startsWith('color') ? `A ${ct.label} ${shape}!` : rule.startsWith('shape') ? `${cap1(art_(shape))} ${shape}!` : `A ${ct.label} ${shape}!`;
+      caption(desc); say(desc);
+      await new Promise(r => { waiter = r; });
+    }
+    if (!alive()) return;
+    sfx.win(); caption('All sorted!'); await say('All sorted! Great job!');
+    if (alive()) resolve();
+  });
+}
+
+/* =========================================================
+   LITERACY GAMES
+   ========================================================= */
+
+/* ---- shared letter-building core (Letter rockets + Name tag) ---- */
+function spellCore(alive, {word, art, spoken, ghosts, distractor, intro, outro}){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const L = word.length, wide = W > H*1.3;
+    const slotW = clamp(Math.min(W/(L + (wide?3.2:1.4)), H*.13), 36, 100), slotH = slotW*1.18, gap = slotW*.18;
+    const ps = clamp(Math.min(W,H)*.27, 90, 160);
+    let picX, picY, rowX, rowY;
+    if (wide){ picX = W*.2; picY = TOP + Math.max(slotH, ps)/2 + 6; rowX = W*.58; rowY = picY; }
+    else { picX = W/2; picY = TOP + ps*.5 + 4; rowX = W/2; rowY = picY + ps*.62 + slotH/2 + 10; }
+    const pic = thing(world, picX, picY); pic.inner.classList.add('bob');
+    const pf = art(pic.core, ps*.5);
+    const rowW = L*slotW + (L-1)*gap, slots = [];
+    for (let i=0;i<L;i++){
+      const x = rowX - rowW/2 + slotW/2 + i*(slotW+gap), g = at(world, x, rowY);
+      sketch(g, rrD(slotW, slotH, slotW*.18), {fill:'rgba(255,255,255,.06)', hatch:false, stroke:C.paper, sw:3.5, dash:'3 10'});
+      if (ghosts) txt(g, word[i], slotH*.6, {fill:C.paper, opacity:.3});
+      slots.push({x, y:rowY});
+    }
+    const hl = thing(world, slots[0].x, rowY); hl.inner.classList.add('pulse');
+    sketch(hl.core, rrD(slotW+14, slotH+14, slotW*.24), {stroke:C.sun, sw:4, dash:'8 8', double:false});
+    let letters = word.split('');
+    if (distractor){ const pool = 'BDEKLPTWZ'.split('').filter(ch => !word.includes(ch)); if (pool.length) letters.push(pick(pool)); }
+    letters = shuffle(letters);
+    const ar = clamp(Math.min(Math.min(W,H)*.105, (W-40)/(letters.length*1.25)), 30, 58);
+    const ay0 = rowY + slotH/2 + ar + 22, ay1 = H - ar - 20;
+    const pts = scatter(letters.length, ar+16, W-ar-16, ay0, Math.max(ay0, ay1), ar*2.3);
+    const cols = [C.lilac, C.mint, C.gum, C.sky, C.orange];
+    const rocks = letters.map((ch, i) => {
+      const a = thing(world, pts[i][0], pts[i][1]); a.letter = ch;
+      a.inner.classList.add('bob'); a.inner.style.animationDelay = `${-rnd(0,2.5)}s`;
+      sketch(a.core, blob(ar,.13,9), {fill:cols[i % cols.length], sw:4});
+      el('ellipse', {cx:f(ar*.55), cy:f(-ar*.5), rx:f(ar*.14), ry:f(ar*.1), fill:'rgba(0,0,0,.15)'}, a.core);
+      el('ellipse', {cx:f(-ar*.58), cy:f(ar*.45), rx:f(ar*.1), ry:f(ar*.08), fill:'rgba(0,0,0,.15)'}, a.core);
+      txt(a.core, ch, ar*1.05);
+      appear(a, i*50);
+      return a;
+    });
+    let idx = 0;
+    const tryPlace = async a => {
+      if (a.placed || !alive() || idx >= L) return;
+      const want = word[idx];
+      if (a.letter !== want){
+        wiggle(a); sfx.boop(); flyTo(a, a.hx, a.hy, 1, 350);
+        caption(`Find ${want}`);
+        await say(`That's ${LETTER[a.letter]}. Find ${LETTER[want]}!`);
+        return;
+      }
+      a.placed = true; a.locked = true; const i = idx; idx++;
+      a.inner.classList.remove('bob');
+      if (idx < L){ hl.x = slots[idx].x; hl.place(); } else hl.g.remove();
+      await flyTo(a, slots[i].x, slots[i].y, (slotW*.92)/(ar*2), 380);
+      if (!alive()) return;
+      sfx.place(); await say(LETTER[a.letter], {rate:.9});
+      if (!alive()) return;
+      if (idx < L){ caption(`Find ${word[idx]}`); say(`Find ${LETTER[word[idx]]}`, {interrupt:false}); return; }
+      await wait(250);
+      const placed = rocks.filter(r => r.placed).sort((p,q) => p.x - q.x);
+      for (const r of placed){ if (!alive()) return; pop(r, .25); await say(LETTER[r.letter], {rate:1.1}); }
+      if (!alive()) return;
+      caption(`${word}!`); sfx.win(); pf.set('happy'); pop(pic, .3); burst(pic.x, pic.y, 7);
+      await say(outro || `${spoken}!`);
+      if (alive()) resolve();
+    };
+    rocks.forEach(a => interact(a, {label:`letter ${a.letter}`, drag:true, onTap:() => tryPlace(a), onDrop:() => {
+      const s = slots[idx];
+      if (s && Math.hypot(a.x-s.x, a.y-s.y) < slotW) tryPlace(a); else flyTo(a, a.hx, a.hy, 1, 350);
+    }}));
+    if (intro) await prompt(`Spell ${word}`, intro);
+    if (!alive()) return;
+    await prompt(`Spell ${word}`, `Let's spell ${spoken}! Find ${LETTER[word[0]]}.`);
+  });
+}
+function playSpell(alive){
+  const w = S.data.words[S.round % S.data.words.length], little = S.age==='little';
+  return spellCore(alive, {word:w, art:ART[w], spoken:w.toLowerCase(), ghosts:little, distractor:!little});
+}
+function playName(alive){
+  const nm = (S.name || 'PIP').slice(0, 8), little = S.age==='little';
+  const spoken = nm[0] + nm.slice(1).toLowerCase();
+  return spellCore(alive, {word:nm, spoken,
+    art:(g,r) => { DOODLE.helmet(g, r); face(at(g,0,r*.05), r*.42); return {set(){}}; },
+    ghosts: little || S.round < 2, distractor: !little && S.round > 0,
+    intro: (!S.name && S.round===0) ? "Let's spell Pip's name. Grown-ups can add your name in the settings." : null,
+    outro: S.name ? `${spoken}! That's your name!` : `${spoken}! That's Pip's name!`});
+}
+
+/* ---- Trace to launch ---- */
+const TRACE = {
+  I:['M50 12 L50 88'],
+  L:['M32 12 L32 88 L72 88'],
+  T:['M22 14 L78 14','M50 14 L50 88'],
+  O:['M50 12 C28 12 18 32 18 50 C18 70 30 88 50 88 C70 88 82 70 82 50 C82 30 72 12 50 12'],
+  C:['M76 26 C68 16 58 12 50 12 C30 12 18 32 18 50 C18 70 30 88 50 88 C60 88 70 82 76 72'],
+  S:['M72 24 C66 14 58 12 48 12 C34 12 26 22 26 32 C26 46 42 48 50 50 C60 52 74 56 74 70 C74 82 62 88 50 88 C38 88 30 82 26 74'],
+  A:['M50 12 L22 88','M50 12 L78 88','M33 60 L67 60'],
+  M:['M20 88 L20 12 L50 58 L80 12 L80 88'],
+  N:['M24 88 L24 12 L76 88 L76 12'],
+  P:['M30 88 L30 12','M30 12 L56 12 C70 12 76 22 76 32 C76 42 70 52 56 52 L30 52'],
+};
+function playTrace(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const ch = S.data.trace[S.round % S.data.trace.length];
+    const B = clamp(Math.min(W*.82, H-TOP-40), 180, 440);
+    const ox = W/2 - B/2, oy = TOP + Math.max(0, (H-TOP-20-B)/2), sc = B/100;
+    const tmp = el('path', {}, world);
+    const sampled = TRACE[ch].map(d => {
+      tmp.setAttribute('d', d); const len = tmp.getTotalLength(), n = Math.max(8, Math.ceil(len/2.5)), pts = [];
+      for (let i=0;i<=n;i++){ const p = tmp.getPointAtLength(len*i/n); pts.push([ox+p.x*sc, oy+p.y*sc]); }
+      return pts;
+    });
+    tmp.remove();
+    const poly = pts => 'M' + pts.map(p => f(p[0])+','+f(p[1])).join(' L');
+    sampled.forEach(pts => {
+      el('path', {d:poly(pts), stroke:'rgba(255,253,246,.16)', 'stroke-width':f(sc*15), fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, world);
+      el('path', {d:poly(pts), stroke:C.paper, 'stroke-width':3, 'stroke-dasharray':'2 10', fill:'none', 'stroke-linecap':'round', opacity:.8}, world);
+    });
+    const fuel = el('g', {}, world);
+    const marker = thing(world, 0, 0); marker.inner.classList.add('pulse');
+    sketch(marker.core, starD(clamp(sc*6.5, 14, 26)), {fill:C.mint, sw:3});
+    const hit = el('rect', {x:0, y:0, width:W, height:H, fill:'transparent'}, world);
+    let si = 0, idx = 0, cur = null, drawing = false, done = false, lastS = 0;
+    const setStroke = () => { const p = sampled[si][0]; marker.x = p[0]; marker.y = p[1]; marker.place(); idx = 0;
+      cur = el('path', {stroke:C.sun, 'stroke-width':f(sc*9), fill:'none', 'stroke-linecap':'round', 'stroke-linejoin':'round'}, fuel); };
+    setStroke();
+    const tol = Math.max(22, sc*11);
+    const finishStroke = async () => {
+      drawing = false; cur.setAttribute('d', poly(sampled[si])); sfx.place(); si++;
+      if (si < sampled.length){ setStroke(); say(pick(['Great! Now this one.','Keep going!','Now the next line!'])); return; }
+      done = true; marker.g.remove(); hit.remove();
+      fuel.querySelectorAll('path').forEach(p => p.setAttribute('stroke', C.tomato));
+      const rs = clamp(sc*14, 40, 70), rk = thing(world, W/2, oy + B*.5); drawRocket(rk.core, rs); appear(rk);
+      caption(`${ch}!`); sfx.whoosh();
+      say(`${LETTER[ch]}! You traced ${LETTER[ch]}. Blast off!`);
+      await wait(600);
+      const sy = rk.y; await tween(1300, t => { rk.y = sy - t*(sy + 200); rk.place(); }, t => t*t);
+      if (alive()) resolve();
+    };
+    const advance = (x, y) => {
+      if (done) return;
+      const pts = sampled[si]; let moved = false;
+      for (let j=idx; j<Math.min(pts.length, idx+10); j++) if (Math.hypot(pts[j][0]-x, pts[j][1]-y) < tol){ idx = j+1; moved = true; }
+      if (!moved) return;
+      marker.inner.classList.remove('pulse');
+      cur.setAttribute('d', poly(pts.slice(0, Math.max(2, idx))));
+      const p = pts[Math.min(idx, pts.length-1)]; marker.x = p[0]; marker.y = p[1]; marker.place();
+      const now = performance.now(); if (now - lastS > 90){ lastS = now; sfx.scratch(); }
+      if (idx >= pts.length-1) finishStroke();
+    };
+    hit.addEventListener('pointerdown', e => { if (done) return; e.preventDefault(); unlockAudio(); drawing = true; advance(e.clientX, e.clientY); });
+    const mv = e => { if (!alive()){ removeEventListener('pointermove', mv); removeEventListener('pointerup', up); return; } if (drawing) advance(e.clientX, e.clientY); };
+    const up = () => { drawing = false; };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+    prompt(`Trace ${ch}`, `Trace the letter ${LETTER[ch]} to fill the rocket with fuel! Start at the green star.`);
+  });
+}
+
+/* ---- Sound satellites (first sounds) ---- */
+const PIC_WORDS = ['sun','star','spoon','cookie','cup','cat','car','heart','hat','ball','bee','fish','tree','moon','rocket','planet'];
+const SOUND = {S:'sss',C:'kuh',H:'huh',B:'buh',F:'fff',T:'tuh',M:'mmm',R:'rrr',P:'puh'};
+const first = w => w[0].toUpperCase();
+function playSounds(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const G = S.data.groups[S.round % S.data.groups.length];
+    const [anchor, right] = shuffle(PIC_WORDS.filter(w => first(w)===G));
+    const opts = shuffle([right, ...shuffle(PIC_WORDS.filter(w => first(w)!==G)).slice(0, little?1:2)]);
+    const A = clamp(Math.min(W,H)*.28, 100, 170), ay = TOP + A/2 + 6;
+    const sat = at(world, W/2 - A*.85, ay - A*.25, 1, -20);
+    sketch(sat, rrD(A*.2, A*.2, 4), {fill:C.paper, sw:3});
+    [-1,1].forEach(k => sketch(at(sat, k*A*.24, 0), rrD(A*.24, A*.12, 2), {fill:C.sky, sw:3, hatch:false}));
+    const an = picCard(world, W/2, ay, A, anchor);
+    interact(an, {label:anchor, onTap:() => { pop(an, .1); say(anchor); }});
+    const cs = clamp(Math.min(W/(opts.length+.6), H*.24), 90, 170), cy = H - cs/2 - 26;
+    for (let i=0;i<3;i++) el('path', {d:`M${f(W/2 + (i-1)*A*.3)},${f(ay+A*.55)} L${f(W/2 + (i-1)*A*.9)},${f(cy - cs*.6)}`, stroke:C.paper, 'stroke-width':3, 'stroke-dasharray':'2 12', 'stroke-linecap':'round', opacity:.6}, world);
+    const { size, xs } = rowXs(opts.length, cs, 18);
+    const cards = opts.map((w,i) => { const c = picCard(world, xs[i], cy, size, w); appear(c, i*90); return c; });
+    prompt(`Starts like ${anchor}?`, `This is ${anchor}. ${cap1(anchor)} starts with ${SOUND[G]}. Which one starts like ${anchor}?`);
+    await choose(cards, {alive, isRight:c => c.key===right,
+      right: async c => { sfx.win(); pop(c, .2); pop(an, .2); caption(`${anchor} and ${right}!`); await say(`${cap1(right)}! ${cap1(anchor)} and ${right} both start with ${SOUND[G]}.`); },
+      wrong: async c => { await say(`${cap1(c.key)} starts with ${SOUND[first(c.key)]}. Try again!`); }});
+    if (alive()) resolve();
+  });
+}
+
+/* ---- Rhyme rockets ---- */
+const RHYMES = [['moon','spoon'],['star','car'],['cat','hat'],['bee','tree']];
+function playRhyme(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const [anchor, right] = S.data.rhymes[S.round % S.data.rhymes.length];
+    const opts = shuffle([right, ...shuffle(PIC_WORDS.filter(w => w!==anchor && w!==right)).slice(0, little?1:2)]);
+    const A = clamp(Math.min(W,H)*.28, 100, 170), ay = TOP + A/2 + 6;
+    const rk = thing(world, W/2 + A*.78, ay + A*.1); rk.r = 20; rk.place(); rk.inner.classList.add('bob'); drawRocket(rk.core, A*.32);
+    const an = picCard(world, W/2, ay, A, anchor);
+    interact(an, {label:anchor, onTap:() => { pop(an, .1); say(anchor); }});
+    const cs = clamp(Math.min(W/(opts.length+.6), H*.24), 90, 170), cy = H - cs/2 - 26;
+    const { size, xs } = rowXs(opts.length, cs, 18);
+    const cards = opts.map((w,i) => { const c = picCard(world, xs[i], cy, size, w); appear(c, i*90); return c; });
+    prompt(`What rhymes with ${anchor}?`, `${cap1(anchor)} wants a rhyming friend! ${cap1(anchor)}... ${opts.join(', or ')}?`);
+    await choose(cards, {alive, isRight:c => c.key===right,
+      right: async c => { sfx.win(); pop(c, .2); pop(an, .2); caption(`${anchor}, ${right}!`); await say(`${cap1(anchor)}, ${right}! They rhyme!`); },
+      wrong: async c => { await say(`${cap1(anchor)}, ${c.key}. Those don't rhyme. Try again!`); }});
+    if (alive()) resolve();
+  });
+}
+
+/* ---- Clap the planets (syllables) ---- */
+const SYL = [
+  {n:'Mars', parts:['Mars'], sayp:['mars'], c:C.tomato},
+  {n:'Earth', parts:['Earth'], sayp:['earth'], c:C.sky},
+  {n:'Venus', parts:['Ve','nus'], sayp:['vee','nus'], c:'#F2D38B'},
+  {n:'Pluto', parts:['Plu','to'], sayp:['ploo','toe'], c:C.lilac},
+  {n:'Saturn', parts:['Sat','urn'], sayp:['sat','urn'], c:'#EBC77A', ring:'#C99A45'},
+  {n:'Neptune', parts:['Nep','tune'], sayp:['nep','toon'], c:'#5B7CFA'},
+  {n:'Jupiter', parts:['Ju','pi','ter'], sayp:['joo','pih','ter'], c:C.orange, stripes:true},
+  {n:'Mercury', parts:['Mer','cu','ry'], sayp:['mer','kyuh','ree'], c:'#B8B2A7'},
+];
+function pickSyllablePlanets(){
+  const by = k => SYL.filter(p => p.parts.length===k);
+  const set = [pick(by(1)), pick(by(2)), pick(by(3))];
+  return S.age==='little' ? set : shuffle(set);
+}
+function playClap(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const p = S.data.syl[S.round % S.data.syl.length], n = p.parts.length;
+    const pr = clamp(Math.min(W*.28, (H-TOP-230)*.4), 60, 140);
+    const pl = thing(world, W/2, TOP + pr + 24); pl.inner.classList.add('bob');
+    el('circle', {r:f(pr*1.2), fill:'transparent'}, pl.core);
+    drawPlanet(pl.core, pr, p.c, {ring:p.ring||null, stripes:p.stripes, craters:!p.stripes});
+    const fs = clamp(pr*.6, 34, 70), gapW = fs*.7;
+    const widths = p.parts.map(s => s.length*fs*.6), total = widths.reduce((a,b)=>a+b,0) + gapW*(n-1);
+    let x = W/2 - total/2; const chunkY = pl.y + pr*1.35 + fs*.6;
+    const chunks = p.parts.map((s,i) => { const cx = x + widths[i]/2; x += widths[i] + gapW; const t = txt(world, s, fs, {hand:true, fill:C.paper, x:cx, y:chunkY, opacity:.3}); return t; });
+    for (let i=0;i<n-1;i++){ const dx = W/2 - total/2 + widths.slice(0,i+1).reduce((a,b)=>a+b,0) + gapW*i + gapW/2; el('circle', {cx:f(dx), cy:f(chunkY), r:4, fill:C.paper, opacity:.5}, world); }
+    const light = (i, on) => { chunks[i].setAttribute('opacity', on?1:.3); chunks[i].setAttribute('fill', on?C.sun:C.paper); };
+    await prompt('Listen!', `Listen! ${p.n}.`); if (!alive()) return;
+    for (let i=0;i<n;i++){ light(i, true); sfx.clap(); pop(pl, .06); await say(p.sayp[i], {rate:.85}); if (!alive()) return; await wait(150); }
+    await wait(300); chunks.forEach((_,i) => light(i, false));
+    let k = 0, busy = false;
+    prompt('Your turn! Tap to clap', `Your turn! Tap the planet to clap: ${p.n}.`);
+    pl.inner.classList.add('pulse');
+    interact(pl, {label:`${p.n}. Tap to clap`, onTap: async () => {
+      if (busy || !alive() || k >= n) return; busy = true;
+      pl.inner.classList.remove('pulse');
+      light(k, true); sfx.clap(); pop(pl, .1); await say(p.sayp[k], {rate:.9}); k++;
+      busy = false;
+      if (k < n) return;
+      pl.locked = true;
+      caption(`${p.n}: ${n} ${n===1?'clap':'claps'}!`);
+      await say(`${p.n}! ${cap1(NUMW[n])} ${n===1?'clap':'claps'}!`); if (!alive()) return;
+      if (S.age !== 'little') await askNumber(n, {alive, min:1, max:4, prompt:'How many claps?', rightSay:`Yes! ${p.n} has ${NUMW[n]} ${n===1?'clap':'claps'}.`,
+        onWrong: async () => { for (let i=0;i<n;i++){ if (!alive()) return; light(i,false); } for (let i=0;i<n;i++){ if (!alive()) return; light(i,true); sfx.clap(); await say(p.sayp[i], {rate:.9}); } }});
+      if (alive()) resolve();
+    }});
+  });
+}
+
+/* =========================================================
+   SPACE GAMES
+   ========================================================= */
+
+/* ---- Day & night spinner ---- */
+function playDay(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const target = ['day','night','day'][S.round % 3];
+    const land = W > H*1.05;
+    const er = clamp(Math.min(land ? W*.22 : W*.34, (H-TOP)*(land ? .34 : .26)), 65, 190);
+    const ex = land ? W*.6 : W/2, ey = land ? (TOP+H)/2 + 10 : H - er*1.35 - 20;
+    const sunR = clamp(er*.5, 38, 85);
+    const sx = land ? Math.max(sunR+24, W*.16) : W/2, sy = land ? ey : TOP + sunR + 6;
+    const sd = Math.atan2(sy-ey, sx-ex)*180/Math.PI;
+    const sun = thing(world, sx, sy); sun.inner.classList.add('bob'); ART.SUN(sun.core, sunR);
+    const earth = thing(world, ex, ey);
+    el('circle', {r:f(er*1.35), fill:'transparent'}, earth.core);
+    sketch(earth.core, blob(er,.03,16), {fill:C.sky, sw:5});
+    [[-.35,-.2,.35],[.4,.3,.3],[.1,.55,.22],[-.45,.5,.18]].forEach(([x,y,k]) => sketch(at(earth.core, x*er, y*er), blob(er*k,.18,9), {fill:C.mint, sw:3}));
+    const hs = er*.32, house = at(earth.core, 0, -er*.98);
+    sketch(at(house, hs*.78, -hs*.12), rrD(hs*.12, hs*.3, 2), {fill:'#9A6440', sw:2.5, hatch:false});
+    sketch(at(house, hs*.78, -hs*.4), blob(hs*.26,.1,8), {fill:'#3FB98F', sw:3});
+    sketch(at(house, 0, -hs*.35), rrD(hs*.8, hs*.7, hs*.08), {fill:C.paper});
+    sketch(at(house, 0, -hs*.85), triD(hs*1.05, hs*.45), {fill:C.tomato});
+    const win = el('rect', {x:f(-hs*.18), y:f(-hs*.52), width:f(hs*.36), height:f(hs*.28), fill:C.sky, stroke:C.ink, 'stroke-width':2.5}, house);
+    const shade = el('g', {transform:`translate(${f(ex)},${f(ey)}) rotate(${f(sd-180)})`, 'pointer-events':'none'}, world);
+    el('path', {d:`M0,${f(-er*1.42)} A${f(er*1.42)} ${f(er*1.42)} 0 0 1 0,${f(er*1.42)}Z`, fill:'rgba(6,8,30,.5)'}, shade);
+    const houseAng = () => earth.r - 90;
+    const look = () => win.setAttribute('fill', angDiff(houseAng(), sd) > 90 ? C.sun : C.sky);
+    earth.r = target==='day' ? sd + 270 : sd + 90; earth.place(); look();
+    let solved = false;
+    const check = async () => {
+      if (solved || !alive()) return;
+      const d = angDiff(houseAng(), sd), ok = target==='day' ? d < 50 : d > 130;
+      if (!ok) return;
+      solved = true; sfx.win(); caption(target==='day' ? 'Good morning!' : 'Good night!');
+      await say(target==='day' ? 'Good morning! The house faces the Sun, so it is daytime.' : 'Good night! The house faces away from the Sun, so it is night time.');
+      if (alive()) resolve();
+    };
+    const spinBy = async deg => { const r0 = earth.r; sfx.whoosh(); await tween(500, t => { earth.r = r0 + deg*t; earth.place(); look(); }); check(); };
+    earth.g.style.cursor = 'grab'; earth.g.setAttribute('role','button'); earth.g.setAttribute('tabindex','0'); earth.g.setAttribute('aria-label','Spin the Earth');
+    earth.g.addEventListener('keydown', e => { if ((e.key==='Enter'||e.key===' ') && !solved){ e.preventDefault(); spinBy(60); } });
+    earth.g.addEventListener('pointerdown', e => {
+      if (solved) return; e.preventDefault(); unlockAudio();
+      let last = Math.atan2(e.clientY-ey, e.clientX-ex)*180/Math.PI, acc = 0, moved = false;
+      const mv = ev => { const a = Math.atan2(ev.clientY-ey, ev.clientX-ex)*180/Math.PI; let d = a - last; if (d>180) d-=360; if (d<-180) d+=360; last = a; acc += d; if (Math.abs(acc) > 4) moved = true; earth.r += d; earth.place(); look(); };
+      const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); if (!moved) spinBy(60); else check(); };
+      addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+    });
+    earth.inner.classList.add('pulse'); setTimeout(() => earth.inner.classList.remove('pulse'), 2500);
+    if (target==='day') prompt('Make it daytime!', "It's night at the house! Spin the Earth so the house faces the Sun.");
+    else prompt('Make it night time!', 'Now spin the Earth to make it night time at the house.');
+  });
+}
+
+/* ---- Moon moods (phases) ---- */
+const PHASES = [{f:0,n:'new moon'},{f:.25,n:'crescent moon'},{f:.5,n:'half moon'},{f:.75,n:'gibbous moon'},{f:1,n:'full moon'}];
+function playMoonMoods(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    if (!S.data.phaseT) S.data.phaseT = shuffle(S.age==='little' ? [1,2,4] : [1,2,3,4]).slice(0,3);
+    const tgt = S.data.phaseT[S.round % S.data.phaseT.length];
+    const land = W > H*1.1;
+    const cs = clamp(Math.min(W,H)*.24, 90, 150);
+    const cardX = land ? W*.78 : W - cs/2 - 18, cardY = TOP + cs/2 + (land ? 30 : 0);
+    const mr = clamp(Math.min(land ? W*.24 : W*.36, (H-TOP-(land?40:cs+60))*.42), 70, 170);
+    const mx = land ? W*.38 : W/2, my = land ? (TOP+H)/2 + 10 : TOP + cs + 40 + mr;
+    const card = thing(world, cardX, cardY); cardBg(card, cs); moonPhase(card.core, cs*.33, PHASES[tgt].f);
+    txt(card.g, 'Make this!', clamp(cs*.17, 18, 26), {hand:true, fill:C.paper, stroke:C.space, sw:6, y:cs*.62});
+    let cur = 0;
+    const moon = thing(world, mx, my); el('circle', {r:f(mr*1.1), fill:'transparent'}, moon.core);
+    const art = el('g', {}, moon.core);
+    const draw = () => { art.innerHTML=''; moonPhase(art, mr, PHASES[cur].f); };
+    draw(); moon.inner.classList.add('pulse');
+    prompt('Tap the Moon!', `Tap the Moon to change its shape. Make it look like the picture: a ${PHASES[tgt].n}!`);
+    let done = false;
+    interact(moon, {label:'Moon. Tap to change', onTap: async () => {
+      if (done || !alive()) return;
+      moon.inner.classList.remove('pulse');
+      cur = (cur + 1) % PHASES.length; draw(); pop(moon, .08); sfx.pop(cur+1);
+      caption(cap1(PHASES[cur].n));
+      if (cur !== tgt){ say(PHASES[cur].n); return; }
+      done = true; moon.locked = true; sfx.win(); pop(card, .15);
+      await say(`A ${PHASES[cur].n}! Just like the picture! ${S.round===2 ? 'The Moon does not make its own light. It shines with sunlight.' : ''}`);
+      if (alive()) resolve();
+    }});
+  });
+}
+
+/* ---- Planet parade (order by size / from the Sun) ---- */
+const PL8 = [
+  {n:'Mercury',c:'#B8B2A7',size:1,order:1,craters:true},{n:'Mars',c:C.tomato,size:2,order:4,craters:true},
+  {n:'Venus',c:'#F2D38B',size:3,order:2},{n:'Earth',c:C.sky,size:4,order:3,earth:true},
+  {n:'Neptune',c:'#5B7CFA',size:5,order:8},{n:'Uranus',c:C.aqua,size:6,order:7},
+  {n:'Saturn',c:'#EBC77A',size:7,order:6,ring:'#C99A45'},{n:'Jupiter',c:C.orange,size:8,order:5,stripes:true},
+];
+function drawNamed(g, p, r){
+  drawPlanet(g, r, p.c, {ring:p.ring||null, stripes:!!p.stripes, craters:!!p.craters});
+  if (p.earth) [[-.3,-.2,.35],[.35,.3,.28]].forEach(([x,y,k]) => sketch(at(g,x*r,y*r), blob(r*k,.18,8), {fill:C.mint, sw:2.5, hatch:false}));
+}
+function playParade(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const mode = little ? 'size' : (S.round < 2 ? 'size' : 'sun');
+    const k = little ? [3,3,4][S.round%3] : [4,5,4][S.round%3];
+    const set = mode==='size' ? shuffle(PL8).slice(0,k).sort((a,b) => a.size-b.size) : PL8.filter(p => p.order<=4).sort((a,b) => a.order-b.order);
+    const base = clamp(Math.min(W/(k*2.4), (H-TOP)*.13), 26, 70);
+    const radii = mode==='size' ? set.map((_,i) => base*(.45 + .55*i/(k-1))) : set.map(p => base*({Mercury:.5,Venus:.9,Earth:.95,Mars:.6}[p.n]));
+    const x0 = mode==='sun' ? base*1.5 : 20, stepX = (W - x0 - 16)/k;
+    const maxPlaced = Math.min(base, stepX*.42), lineY = TOP + maxPlaced + 10;
+    if (mode==='sun'){ const sg = at(world, -base*.35, lineY); sketch(sg, blob(base*1.3,.05,14), {fill:C.sun, sw:4}); }
+    for (let i=0;i<k;i++) el('circle', {cx:f(x0 + stepX*(i+.5)), cy:f(lineY), r:f(maxPlaced*.45), fill:'none', stroke:C.paper, 'stroke-width':3, 'stroke-dasharray':'3 8', opacity:.7}, world);
+    const y0 = lineY + maxPlaced + base + 36, y1 = H - base - 34;
+    const pts = scatter(k, base+20, W-base-20, y0, Math.max(y0, y1), base*2.3);
+    const order = shuffle(set.map((_,i) => i));
+    const ps = order.map((si, j) => {
+      const p = set[si], r = radii[si], t = thing(world, pts[j][0], pts[j][1]); t.si = si; t.label = p.n; t.rad = r;
+      el('circle', {r:f(r*1.15), fill:'transparent'}, t.core);
+      drawNamed(t.core, p, r);
+      txt(t.core, p.n, clamp(base*.36, 15, 22), {hand:true, fill:C.paper, stroke:C.space, sw:5, y:r+14});
+      appear(t, j*80);
+      return t;
+    });
+    let next = 0, misses = 0;
+    prompt(mode==='size' ? 'Smallest to biggest!' : 'Start next to the Sun!',
+      mode==='size' ? 'Line up the planets from smallest to biggest! Tap the smallest one.' : 'Line up the planets, starting with the one closest to the Sun!');
+    ps.forEach(t => interact(t, {label:t.label, onTap: async () => {
+      if (!alive() || t.placed) return;
+      if (t.si !== next){
+        misses++; wiggle(t); sfx.boop();
+        if (misses >= 2) ps.forEach(q => q.inner.classList.toggle('pulse', q.si === next));
+        say(mode==='size' ? (next===0 ? 'Find the smallest one!' : 'Find the next smallest one!') : (next===0 ? 'Which one is closest to the Sun?' : 'Which one comes next?'));
+        return;
+      }
+      misses = 0; ps.forEach(q => q.inner.classList.remove('pulse'));
+      t.placed = true; t.locked = true; const i = next; next++;
+      sfx.place(); say(set[i].n, {rate:1});
+      await flyTo(t, x0 + stepX*(i+.5), lineY, Math.min(1, maxPlaced/t.rad), 450);
+      if (!alive() || next < k) return;
+      sfx.win(); caption('Great parade!');
+      await say(`${set.map(p => p.n).join(', ')}! ${mode==='sun' ? 'Mercury is closest to the Sun!' : 'From smallest to biggest!'}`);
+      if (alive()) resolve();
+    }}));
+  });
+}
+
+/* ---- Suit up (sequencing) ---- */
+const GEAR_NAME = {suit:'space suit', boots:'moon boots', gloves:'gloves', helmet:'helmet'};
+function drawPipLayers(g, P){
+  const L = {};
+  [-1,1].forEach(k => sketch(at(g,k*P*.22,P*.78), ovalD(P*.14,P*.09), {fill:C.lilac, sw:3}));
+  L.boots = el('g', {opacity:0}, g); [-1,1].forEach(k => sketch(at(L.boots,k*P*.22,P*.76), ovalD(P*.21,P*.13), {fill:'#5A5F73', sw:3.5}));
+  sketch(at(g,0,P*.3), rrD(P*.72,P*.78,P*.28), {fill:C.lilac});
+  L.suit = el('g', {opacity:0}, g); sketch(at(L.suit,0,P*.3), rrD(P*.84,P*.86,P*.3), {fill:C.paper}); sketch(at(L.suit,-P*.18,P*.18), blob(P*.08,.1,8), {fill:C.tomato, sw:2.5, hatch:false}); line(L.suit, `M${f(-P*.4)},${f(P*.46)} L${f(P*.4)},${f(P*.46)}`, C.sky, P*.06);
+  [-1,1].forEach(k => sketch(at(g,k*P*.52,P*.28), blob(P*.11,.08,9), {fill:C.lilac, sw:3}));
+  L.gloves = el('g', {opacity:0}, g); [-1,1].forEach(k => sketch(at(L.gloves,k*P*.52,P*.28), blob(P*.16,.08,9), {fill:C.sun, sw:3.5}));
+  const hd = at(g,0,-P*.35); sketch(hd, blob(P*.36,.04,12), {fill:C.lilac}); face(hd, P*.34);
+  L.helmet = el('g', {opacity:0}, g); const hm = at(L.helmet,0,-P*.35);
+  sketch(hm, blob(P*.52,.02,14), {fill:'rgba(110,198,255,.28)', sw:4.5, hatch:false});
+  line(hm, `M${f(-P*.3)},${f(-P*.2)} Q${f(-P*.22)},${f(-P*.38)} ${f(-P*.02)},${f(-P*.4)}`, '#fff', 4);
+  line(hm, `M0,${f(-P*.52)} L0,${f(-P*.75)}`, C.ink, 3.5); sketch(at(hm,0,-P*.8), blob(P*.07,.1,7), {fill:C.tomato, sw:2.5, hatch:false});
+  return L;
+}
+function gearIcon(g, key, r){
+  if (key==='suit'){ sketch(g, rrD(r*1.1,r*1.3,r*.3), {fill:C.paper}); sketch(at(g,-r*.22,-r*.2), blob(r*.12,.1,8), {fill:C.tomato, sw:2.5, hatch:false}); }
+  else if (key==='boots') [-1,1].forEach(k => sketch(at(g,k*r*.38,r*.1), ovalD(r*.34,r*.24), {fill:'#5A5F73', sw:3.5}));
+  else if (key==='gloves') [-1,1].forEach(k => sketch(at(g,k*r*.38,0), blob(r*.3,.08,9), {fill:C.sun, sw:3.5}));
+  else { sketch(g, blob(r*.72,.02,14), {fill:'rgba(110,198,255,.35)', sw:4, hatch:false}); line(g, `M${f(-r*.4)},${f(-r*.2)} Q${f(-r*.3)},${f(-r*.45)} ${f(-r*.05)},${f(-r*.5)}`, '#fff', 4); }
+}
+function playSuitUp(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const seq = [['suit','helmet'],['suit','boots','helmet'],['suit','boots','gloves','helmet']][S.round % 3];
+    const land = W > H*1.1;
+    const cs = clamp(Math.min(W/(seq.length+.8), H*.2), 80, 140);
+    const P = clamp(Math.min(land ? W*.22 : W*.34, (H-TOP-(land?40:cs+60))*.42), 60, 160);
+    const px = land ? W*.3 : W/2, py = land ? (TOP+H)/2 + P*.1 : TOP + P*1.05 + 10;
+    const pip = thing(world, px, py); pip.inner.classList.add('bob');
+    const L = drawPipLayers(pip.core, P);
+    const items = shuffle(seq);
+    let pos;
+    if (land){ const cols = items.length > 2 ? 2 : 1, rows = Math.ceil(items.length/cols), gs = Math.min(cs, (H-TOP-40)/rows - 14); pos = items.map((_,i) => [W*.7 + (cols>1 ? (i%2 ? 1 : -1)*(gs*.6+6) : 0), TOP + 20 + (gs+14)*(Math.floor(i/cols)+.5)]); }
+    else { const { xs, size } = rowXs(items.length, cs, 14); pos = items.map((_,i) => [xs[i], H - size/2 - 24]); }
+    const size = land ? Math.min(cs, (H-TOP-40)/Math.ceil(items.length/(items.length>2?2:1)) - 14) : rowXs(items.length, cs, 14).size;
+    const cards = items.map((key,i) => { const t = thing(world, pos[i][0], pos[i][1]); cardBg(t, size); gearIcon(at(t.core,0,0), key, size*.32); t.key = key; t.label = GEAR_NAME[key]; appear(t, i*80); return t; });
+    let next = 0, misses = 0;
+    prompt('What goes on first?', `Help Pip get ready for space! What goes on first?`);
+    cards.forEach(c => interact(c, {label:c.label, onTap: async () => {
+      if (!alive() || c.used) return;
+      if (c.key !== seq[next]){
+        misses++; wiggle(c); sfx.boop();
+        if (little || misses >= 2) cards.forEach(q => q.inner.classList.toggle('pulse', q.key === seq[next]));
+        say(`Not yet! First, the ${GEAR_NAME[seq[next]]}.`);
+        return;
+      }
+      misses = 0; cards.forEach(q => q.inner.classList.remove('pulse'));
+      c.used = true; c.locked = true; next++;
+      await flyTo(c, pip.x, pip.y, .2, 400, easeInOut); c.g.remove();
+      if (!alive()) return;
+      L[c.key].setAttribute('opacity', 1); pop(pip, .08); sfx.place();
+      await say(`${cap1(GEAR_NAME[c.key])} on!`, {rate:1});
+      if (!alive()) return;
+      if (next < seq.length){ caption('What goes on next?'); return; }
+      sfx.win(); caption('Ready for space!');
+      await say(`Ready for space! ${seq.map(k => GEAR_NAME[k]).join(', then ')}.`);
+      if (alive()) resolve();
+    }}));
+  });
+}
+
+/* ---- Build a rocket (shapes → parts) ---- */
+function playBuild(alive){
+  return new Promise(async resolve => {
+    world.innerHTML='';
+    const little = S.age==='little';
+    const pool = little ? ['rectangle','triangle','circle'] : ['rectangle','triangle','circle','oval','square'];
+    const cardS = clamp(Math.min(W/(pool.length+.8), H*.16), 64, 120), cardY = H - cardS/2 - 22;
+    const R = clamp(Math.min(W*.3, (cardY - cardS/2 - TOP - 30)*.42), 60, 160);
+    const rx = W/2, ry = TOP + (cardY - cardS/2 - TOP)/2 + R*.05;
+    const P = {
+      body:{shape:'rectangle', x:0, y:0, w:.62, h:1.1, c:C.paper, name:'body'},
+      nose:{shape:'triangle', x:0, y:-.8, w:.62, h:.5, c:C.tomato, name:'nose'},
+      window:{shape:'circle', x:0, y:-.2, w:.3, h:.3, c:C.sky, name:'window'},
+      finL:{shape:'triangle', x:-.47, y:.42, w:.32, h:.4, c:C.tomato, name:'fin'},
+      finR:{shape:'triangle', x:.47, y:.42, w:.32, h:.4, c:C.tomato, name:'fin'},
+      flame:{shape:'oval', x:0, y:.8, w:.3, h:.42, c:C.sun, name:'flame'},
+    };
+    const steps = S.round===0 ? ['body','nose','window'] : (S.round===2 && !little ? ['body','nose','window','finL','finR','flame'] : ['body','nose','window','finL','finR']);
+    const rocket = thing(world, rx, ry);
+    const ghosts = {}, pieces = el('g', {}, rocket.core);
+    steps.forEach(k => { const p = P[k]; ghosts[k] = sketch(at(rocket.core, p.x*R, p.y*R), SHAPE[p.shape](p.w*R, p.h*R), {stroke:C.paper, sw:3, dash:'3 9'}); });
+    const hl = el('g', {class:'pulse', style:'transform-box:fill-box;transform-origin:center'}, rocket.core);
+    const { size, xs } = rowXs(pool.length, cardS, 14);
+    const cards = shuffle(pool).map((s,i) => { const c = shapeCard(world, xs[i], cardY, size, s, C.sun); appear(c, i*70); return c; });
+    let step = 0, misses = 0;
+    const showStep = () => {
+      hl.innerHTML=''; const p = P[steps[step]];
+      sketch(at(hl, p.x*R, p.y*R), SHAPE[p.shape]((p.w*R)+10, (p.h*R)+10), {stroke:C.sun, sw:4, dash:'6 7', double:false});
+      caption(`Find the ${p.shape}!`);
+      return say(`The ${p.name} is ${art_(p.shape)} ${p.shape}. Find the ${p.shape}!`);
+    };
+    await prompt("Let's build a rocket!", "Let's build a rocket out of shapes!");
+    if (!alive()) return;
+    showStep();
+    cards.forEach(c => interact(c, {label:c.label, onTap: async () => {
+      if (!alive() || step >= steps.length) return;
+      const p = P[steps[step]];
+      if (c.key !== p.shape){
+        misses++; wiggle(c); sfx.boop();
+        if (misses >= 2) cards.forEach(q => q.inner.classList.toggle('pulse', q.key === p.shape));
+        say(`That's ${art_(c.key)} ${c.key}. We need ${art_(p.shape)} ${p.shape}.`);
+        return;
+      }
+      misses = 0; cards.forEach(q => q.inner.classList.remove('pulse'));
+      const k = steps[step]; step++;
+      const fly = thing(world, c.x, c.y); sketch(fly.core, SHAPE[p.shape](p.w*R, p.h*R), {fill:p.c});
+      fly.s = (size*.5)/(Math.max(p.w,p.h)*R); fly.place(); sfx.place();
+      await flyTo(fly, rx + p.x*R, ry + p.y*R, 1, 420, easeInOut);
+      if (!alive()) return;
+      fly.g.remove(); ghosts[k].remove();
+      sketch(at(pieces, p.x*R, p.y*R), SHAPE[p.shape](p.w*R, p.h*R), {fill:p.c});
+      if (k==='window') face(at(pieces, 0, -.2*R), .14*R);
+      if (step < steps.length){ await say(`${cap1(p.name)}!`, {rate:1}); if (alive()) showStep(); return; }
+      hl.remove(); cards.forEach(q => q.locked = true);
+      caption('3, 2, 1, blast off!'); await say('Three, two, one, blast off!'); if (!alive()) return;
+      sfx.whoosh();
+      const sy = rocket.y; await tween(1400, t => { rocket.y = sy - t*(sy + R*2); rocket.place(); }, t => t*t);
+      if (alive()) resolve();
+    }}));
+  });
+}
+
+/* ---- Doodle pad (creative) ---- */
+const CRAYONS = [C.tomato, C.sun, C.mint, C.sky, C.gum, C.paper];
+function playDoodle(alive){
+  return new Promise(resolve => {
+    world.innerHTML='';
+    const strokes = [];
+    let color = C.sun, cur = null, drawing = false;
+    const hit = el('rect', {width:W, height:H, fill:'transparent'}, world);
+    const layer = el('g', {'pointer-events':'none', 'data-boil':'', filter:`url(#w${boilK})`}, world);
+    const bottomUI = 150;
+    const redraw = s => s.el.setAttribute('d', 'M' + s.pts.map(p => f(p[0])+','+f(p[1])).join(' L'));
+    hit.addEventListener('pointerdown', e => {
+      if (e.clientY > H - bottomUI || e.clientY < 90) return;
+      e.preventDefault(); unlockAudio(); drawing = true;
+      cur = {c:color, pts:[[e.clientX, e.clientY], [e.clientX+.5, e.clientY+.5]]};
+      cur.el = line(layer, '', color, 11); redraw(cur); strokes.push(cur);
+    });
+    const mv = e => {
+      if (!alive()){ removeEventListener('pointermove', mv); removeEventListener('pointerup', up); return; }
+      if (!drawing || !cur) return;
+      const lp = cur.pts[cur.pts.length-1];
+      if (Math.hypot(e.clientX-lp[0], e.clientY-lp[1]) < 3) return;
+      cur.pts.push([e.clientX, Math.min(e.clientY, H-bottomUI)]); redraw(cur);
+    };
+    const up = () => { drawing = false; cur = null; };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+    const pal = h('div'); pal.id = 'palette';
+    const tools = h('div', 'row'), swr = h('div', 'row');
+    const clear = h('button', 'paper tool', 'Clear'); clear.onclick = () => { strokes.forEach(s => s.el.remove()); strokes.length = 0; sfx.page(); };
+    const done = h('button', 'paper tool go', 'Make a sticker');
+    done.onclick = () => {
+      unlockAudio();
+      if (!strokes.length){ say('Draw something first!'); caption('Draw something first!'); return; }
+      S.data.sticker = {type:'doodle', strokes:strokes.map(s => ({c:s.c, pts:s.pts}))};
+      pal.remove(); resolve();
+    };
+    tools.append(clear, done);
+    CRAYONS.forEach((c,i) => {
+      const b = h('button', 'sw'); b.style.background = c; b.setAttribute('aria-label', ['red','yellow','green','blue','pink','white'][i] + ' crayon');
+      b.setAttribute('aria-pressed', String(c===color));
+      b.onclick = () => { color = c; swr.querySelectorAll('.sw').forEach(x => x.setAttribute('aria-pressed', String(x===b))); sfx.pop(i+1); };
+      swr.appendChild(b);
+    });
+    pal.append(tools, swr); ui.appendChild(pal);
+    prompt('Draw anything!', 'Draw anything you like! Tap a crayon to pick a color. When you are done, make it a sticker!');
+  });
+}
+
+/* =========================================================
+   GRADES 1–3: levels, quiz engine, new games
+   ========================================================= */
+const LEVELS = [['sprout','Ages 2–3'],['captain','Ages 4–5'],['g1','Grade 1'],['g2','Grade 2'],['g3','Grade 3']];
+const levelName = () => (LEVELS.find(l => l[0]===S.level) || LEVELS[0])[1];
+const gr = () => ({g1:1, g2:2, g3:3}[S.level] || 1);
+function setLevel(v){ S.level = v; S.age = v==='sprout' ? 'little' : 'big'; }
+function mc(answer, cands, n){
+  const out = [answer];
+  for (const c of shuffle(cands)){ if (out.length >= n) break; if (c!=null && c!=='' && !out.includes(c)) out.push(c); }
+  return shuffle(out);
+}
+function fresh(gen){
+  if (!S.data.seen) S.data.seen = new Set();
+  for (let i=0;i<40;i++){ const q = gen(); if (!S.data.seen.has(q.key)){ S.data.seen.add(q.key); return q; } }
+  return gen();
+}
+function panel(parent, x, y, w, hh, fill=C.paper){ return sketch(at(parent,x,y), rrD(w, hh, Math.min(w,hh)*.14), {fill, sw:4, hatch:false}); }
+function againButton(){
+  if (document.getElementById('again')) return;
+  const b = h('button','paper',ICON.speaker); b.id='again'; b.setAttribute('aria-label','Say it again');
+  b.onclick = () => { unlockAudio(); if (S.repeat) S.repeat(); };
+  ui.appendChild(b);
+}
+
+/* ---- the shared multiple-choice engine ---- */
+function quiz(alive, q){
+  return new Promise(resolve => {
+    world.innerHTML='';
+    const old = document.getElementById('passage'); if (old) old.remove();
+    const box = document.getElementById('answers'); box.innerHTML='';
+    const long = q.choices.some(c => String(c).length > 15);
+    let misses = 0, done = false;
+    const btns = q.choices.map(c => { const b = h('button', 'ans paper' + (long ? ' long' : '')); b.textContent = c; box.appendChild(b); return b; });
+    const aTop = box.getBoundingClientRect().top;
+    const A = {x:W/2, y:(TOP + aTop)/2, w:W-24, h:Math.max(80, aTop - TOP - 16), top:TOP, bottom:aTop - 10};
+    if (q.draw) q.draw(world, A);
+    const speak = () => say(q.spoken || q.cap);
+    S.q = q; S.repeat = speak; againButton();
+    caption(q.cap); speak();
+    btns.forEach((b, i) => b.onclick = async () => {
+      if (done || !alive() || b.disabled) return; unlockAudio();
+      const c = q.choices[i];
+      if (c === q.answer){
+        done = true; b.classList.add('right');
+        btns.forEach(x => { x.classList.remove('pulse'); if (x !== b) x.disabled = true; });
+        sfx.win(); if (q.onRight) q.onRight();
+        caption(q.good || 'Yes!');
+        await say(q.explain ? `Yes! ${q.explain}` : `Yes! ${c}.`);
+        if (!alive()) return;
+        await wait(350);
+        box.innerHTML=''; const p = document.getElementById('passage'); if (p) p.remove();
+        S.repeat = null; resolve();
+      } else {
+        misses++; b.disabled = true; sfx.boop();
+        if (q.onMiss) q.onMiss(misses);
+        if (misses >= 2) btns.forEach((x,j) => { if (q.choices[j]===q.answer) x.classList.add('pulse'); });
+        const hint = q.hint ? q.hint(c) : 'Not quite. Try again!';
+        caption(q.quietCap ? 'Try again!' : hint);
+        await say(hint);
+      }
+    });
+  });
+}
+
+/* ---- shared drawings ---- */
+function tenFrames(g, cx, cy, cs, cells){
+  const frames = Math.max(1, Math.ceil(cells.length/10));
+  for (let fi=0; fi<frames; fi++){
+    const fx = cx + (fi - (frames-1)/2)*(cs*5 + cs*.8);
+    for (let i=0;i<10;i++){
+      const r = Math.floor(i/5), c = i%5, x = fx + (c-2)*cs, y = cy + (r-.5)*cs;
+      el('rect', {x:f(x-cs/2), y:f(y-cs/2), width:f(cs), height:f(cs), fill:'rgba(255,253,246,.92)', stroke:C.ink, 'stroke-width':2.5}, g);
+      const cell = cells[fi*10+i]; if (!cell) continue;
+      if (cell.dash){ el('circle', {cx:f(x), cy:f(y), r:f(cs*.32), fill:'none', stroke:C.ink, 'stroke-width':2, 'stroke-dasharray':'3 4'}, g); continue; }
+      el('circle', {cx:f(x), cy:f(y), r:f(cs*.34), fill:cell.fill, stroke:C.ink, 'stroke-width':2.5}, g);
+      if (cell.cross) line(g, `M${f(x-cs*.3)},${f(y-cs*.3)} L${f(x+cs*.3)},${f(y+cs*.3)}`, C.ink, 4);
+    }
+  }
+}
+function drawClock(g, cx, cy, R, hh, mm, fine){
+  const G = at(g, cx, cy);
+  sketch(G, blob(R,.02,16), {fill:C.paper, sw:5, hatch:false});
+  for (let i=0;i<60;i++){
+    const big = i%5===0; if (!big && !fine) continue;
+    const a = i*Math.PI/30, r1 = R*(big?.83:.89), r2 = R*.94;
+    line(G, `M${f(Math.sin(a)*r1)},${f(-Math.cos(a)*r1)} L${f(Math.sin(a)*r2)},${f(-Math.cos(a)*r2)}`, C.ink, big?3:1.3);
+  }
+  for (let i=1;i<=12;i++){ const a = i*Math.PI/6; txt(G, i, R*.17, {x:Math.sin(a)*R*.68, y:-Math.cos(a)*R*.68}); }
+  const ha = ((hh%12) + mm/60)*Math.PI/6, ma = mm*Math.PI/30;
+  line(G, `M0,0 L${f(Math.sin(ha)*R*.46)},${f(-Math.cos(ha)*R*.46)}`, C.ink, R*.075);
+  line(G, `M0,0 L${f(Math.sin(ma)*R*.76)},${f(-Math.cos(ma)*R*.76)}`, C.tomato, R*.045);
+  el('circle', {r:f(R*.06), fill:C.ink}, G);
+  return G;
+}
+const COIN = {q:{v:25,n:'quarter',r:1,c:'#CFD4DC'}, d:{v:10,n:'dime',r:.74,c:'#DDE1E8'}, n:{v:5,n:'nickel',r:.87,c:'#C3C8D0'}, p:{v:1,n:'penny',r:.78,c:'#D0925F'}};
+function drawCoin(g, x, y, R, k, label=true){
+  const c = COIN[k], r = R*c.r, G = at(g, x, y);
+  sketch(G, blob(r,.02,14), {fill:c.c, sw:3.5, hatch:false});
+  el('circle', {r:f(r*.8), fill:'none', stroke:'rgba(0,0,0,.25)', 'stroke-width':2}, G);
+  txt(G, `${c.v}¢`, r*.6);
+  if (label) txt(G, c.n, clamp(R*.42,13,19), {hand:true, fill:C.paper, stroke:C.space, sw:4, y:R*1.3});
+  return G;
+}
+function drawPizza(g, cx, cy, R, n, k){
+  const G = at(g, cx, cy);
+  for (let i=0;i<n;i++){
+    const a0 = (-90 + i*360/n)*Math.PI/180, a1 = (-90 + (i+1)*360/n)*Math.PI/180;
+    const d = `M0,0 L${f(Math.cos(a0)*R)},${f(Math.sin(a0)*R)} A${f(R)} ${f(R)} 0 0 1 ${f(Math.cos(a1)*R)},${f(Math.sin(a1)*R)}Z`;
+    sketch(G, d, {fill:i<k ? C.tomato : C.paper, sw:4, double:false, hatch:i<k});
+  }
+  return G;
+}
+function speakerPlanet(w, A){
+  const R = clamp(Math.min(A.w, A.h)*.3, 50, 105);
+  const t = thing(w, W/2, A.y - R*.1); t.inner.classList.add('bob');
+  drawPlanet(t.core, R, C.sky, {craters:false});
+  const sp = at(t.core, -R*.05, 0, R/24);
+  el('path', {d:'M-12,-6 L-4,-6 L6,-15 L6,15 L-4,6 L-12,6Z', fill:C.paper, stroke:C.ink, 'stroke-width':2.5, 'stroke-linejoin':'round'}, sp);
+  el('path', {d:'M11,-7 Q16,0 11,7 M15,-12 Q23,0 15,12', fill:'none', stroke:C.ink, 'stroke-width':2.5, 'stroke-linecap':'round'}, sp);
+  interact(t, {label:'Hear it again', onTap:() => { pop(t,.1); if (S.repeat) S.repeat(); }});
+  txt(w, 'Tap to hear it again', clamp(R*.24,16,22), {hand:true, fill:C.paper, x:W/2, y:t.y + R*1.3});
+}
+Object.assign(DOODLE, {
+  clock:(g,r)=>drawClock(g,0,0,r*.8,3,0,false),
+  coin:(g,r)=>drawCoin(g,0,0,r*.8,'q',false),
+  pizza:(g,r)=>drawPizza(g,0,0,r*.8,4,3),
+});
+
+/* =========================================================
+   MATH (grades 1–3)
+   ========================================================= */
+/* Asteroid math: 1.OA.6 within 20 · 2.NBT.5 within 100 · 3.OA.7 multiply/divide within 100 */
+function qFacts(g){
+  let a, b, op, ans;
+  if (g===1){
+    const t = randInt(0,2);
+    if (t===0){ a = randInt(2,10); b = randInt(1,10); op = '+'; ans = a+b; }
+    else if (t===1){ a = randInt(5,18); b = randInt(1, Math.min(9, a-1)); op = '−'; ans = a-b; }
+    else { a = randInt(2,9); ans = randInt(1,9); b = a+ans; op = 'missing'; }
+  } else if (g===2){
+    if (Math.random() < .5){ a = randInt(12,79); b = randInt(11, 99-a); op = '+'; ans = a+b; }
+    else { a = randInt(30,99); b = randInt(11, a-10); op = '−'; ans = a-b; }
+  } else {
+    if (Math.random() < .65){ a = randInt(2,10); b = randInt(2,10); op = '×'; ans = a*b; }
+    else { b = randInt(2,10); ans = randInt(2,10); a = b*ans; op = '÷'; }
+  }
+  const text = op==='missing' ? `${a} + ? = ${b}` : `${a} ${op} ${b} = ?`;
+  const W_ = {'+':'plus','−':'minus','×':'times','÷':'divided by'};
+  const spoken = op==='missing' ? `${a} plus what makes ${b}?` : `What is ${a} ${W_[op]} ${b}?`;
+  const cands = [ans+1, ans-1, ans+2, ans-2, ans+10, ans-10, op==='×' ? a*(b+1) : null, op==='×' ? a*(b-1) : null].filter(v => v!=null && v>=0).map(String);
+  const q = {key:text, cap:'Solve it!', spoken, answer:String(ans), choices:mc(String(ans), cands, g===1?3:4),
+    explain: op==='missing' ? `${a} plus ${ans} makes ${b}.` : `${a} ${W_[op]} ${b} is ${ans}.`,
+    hint: () => g===1 ? 'Not quite. Use the ten frames to help!' : g===2 ? 'Not quite. Try tens first, then ones.' : (op==='÷' ? `Not quite. Think: ${b} times what makes ${a}?` : `Not quite. Try skip counting by ${b}.`)};
+  q.draw = (w, A) => {
+    const fs = clamp(Math.min(A.w/(text.length*.6+1), A.h*(g===1?.22:.32)), 34, 96);
+    const cw = Math.min(W-24, text.length*fs*.58 + fs), ch = fs*1.55, cy = g===1 ? A.top + ch/2 + 6 : A.y;
+    panel(w, W/2, cy, cw, ch); txt(w, text, fs, {x:W/2, y:cy});
+    sketch(at(w, W/2 + cw/2 - 6, cy - ch/2 + 4, 1, 15), starD(fs*.28), {fill:C.sun, sw:3});
+    q._fy = cy + ch/2 + (A.bottom - cy - ch/2)/2; q._w = w; q._room = A.bottom - cy - ch/2;
+  };
+  if (g===1) q.onMiss = () => {
+    if (q._shown) return; q._shown = true;
+    let cells;
+    if (op==='+') cells = [...Array(a).fill({fill:C.tomato}), ...Array(b).fill({fill:C.sky})];
+    else if (op==='−') cells = Array.from({length:a}, (_,i) => ({fill:C.tomato, cross:i >= a-b}));
+    else cells = [...Array(a).fill({fill:C.tomato}), ...Array(b-a).fill({dash:true})];
+    const cs = clamp(Math.min((W-40)/11, (q._room-20)/2.4), 16, 44);
+    tenFrames(q._w, W/2, q._fy, cs, cells);
+  };
+  return q;
+}
+
+/* Place value port: 1.NBT.2 tens & ones · 2.NBT.1 hundreds · 3.NBT.1 rounding */
+function playPlaceValue(alive){
+  const g = gr();
+  if (g >= 3) return quiz(alive, fresh(qRound));
+  return new Promise(resolve => {
+    world.innerHTML='';
+    const hund = g===2;
+    let T;
+    do { T = hund ? randInt(1,9)*100 + randInt(0,9)*10 + randInt(0,9) : randInt(1,9)*10 + randInt(0,9); } while (T < 11 || T===S.data.lastT);
+    S.data.lastT = T;
+    const cnt = {h:0, t:0, o:0}, val = () => cnt.h*100 + cnt.t*10 + cnt.o;
+    const box = document.getElementById('answers'); box.innerHTML='';
+    let done = false, busy = false;
+    const kinds = hund ? [['h','+ hundred'],['t','+ ten'],['o','+ one']] : [['t','+ ten'],['o','+ one']];
+    kinds.forEach(([k,label]) => { const b = h('button','ans paper'); b.textContent = label; b.onclick = () => { unlockAudio(); add(k); }; box.appendChild(b); });
+    const aTop = box.getBoundingClientRect().top, areaH = aTop - TOP - 20;
+    const unitsW = hund ? 36 : 17.4;
+    const u = clamp(Math.min((W-30)/unitsW, (areaH-100)/10.5), 6, 22);
+    const top = TOP + 48 + Math.max(0, (areaH - 100 - 10*u)/2);
+    const x0 = W/2 - unitsW*u/2, fx = x0, rx = hund ? x0 + 18.4*u : x0, ox = rx + 14.6*u;
+    const read = txt(world, '', clamp(u*1.4, 18, 30), {hand:true, fill:C.paper, x:W/2, y:TOP+20});
+    const tray = (x, w) => el('rect', {x:f(x-u*.4), y:f(top-u*.4), width:f(w+u*.8), height:f(10.8*u), rx:8, fill:'rgba(255,253,246,.06)', stroke:C.paper, 'stroke-width':2, 'stroke-dasharray':'3 8'}, world);
+    const lab = (x, s) => txt(world, s, clamp(u*1.2, 15, 24), {hand:true, fill:C.paper, x, y:top + 10*u + 24});
+    if (hund){ tray(fx, 16.4*u); lab(fx + 8.2*u, 'hundreds'); }
+    tray(rx, 12.6*u); lab(rx + 6.3*u, 'tens');
+    tray(ox, 2.4*u); lab(ox + 1.2*u, 'ones');
+    const G = el('g', {}, world);
+    const render = () => {
+      G.innerHTML='';
+      const mk = (k, x, y, w, hh, fill, gx, gy) => {
+        const p = el('g', {transform:`translate(${f(x)},${f(y)})`, style:'cursor:pointer'}, G);
+        el('rect', {x:0, y:0, width:f(w), height:f(hh), fill, stroke:C.ink, 'stroke-width':2.5, rx:2}, p);
+        if (gx) for (let i=1;i<10;i++) el('path', {d:`M${f(i*u)},0 L${f(i*u)},${f(hh)}`, stroke:'rgba(0,0,0,.22)', 'stroke-width':1}, p);
+        if (gy) for (let i=1;i<10;i++) el('path', {d:`M0,${f(i*u)} L${f(w)},${f(i*u)}`, stroke:'rgba(0,0,0,.22)', 'stroke-width':1}, p);
+        p.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (done || busy) return; cnt[k]--; sfx.boop(); render(); check(); });
+      };
+      for (let i=0;i<cnt.h;i++) mk('h', fx + i*.8*u, top, 10*u, 10*u, C.sky, 1, 1);
+      for (let i=0;i<cnt.t;i++) mk('t', rx + i*1.4*u, top, u, 10*u, C.mint, 0, 1);
+      for (let i=0;i<cnt.o;i++){ const col = Math.floor(i/5), row = i%5; mk('o', ox + col*1.4*u, top + 10*u - (row+1)*1.25*u + .25*u, u, u, C.sun); }
+      read.textContent = (hund ? `${cnt.h} hundreds, ` : '') + `${cnt.t} tens, ${cnt.o} ones = ${val()}`;
+    };
+    const check = async () => {
+      const v = val();
+      if (v === T){
+        done = true; sfx.win(); caption(`${T}!`);
+        await say(`${T}! ${hund ? `${NUMW[cnt.h]} hundreds, ` : ''}${NUMW[cnt.t]} tens, and ${NUMW[cnt.o]} ones.`);
+        box.innerHTML=''; if (alive()) resolve();
+      } else if (v > T){ caption('Too many! Tap a piece to take it away.'); say('Too many! Tap a piece to take it away.'); }
+    };
+    const add = async k => {
+      if (done || busy || !alive()) return;
+      if ((k==='h' && cnt.h>=9) || (!hund && k==='t' && cnt.t>=9)){ sfx.boop(); say('That is too many!'); return; }
+      cnt[k]++; sfx.pop(k==='o'?1:k==='t'?3:5);
+      if (cnt.o === 10){ busy = true; render(); caption('10 ones = 1 ten!'); await say('Ten ones make one ten!'); cnt.o = 0; cnt.t++; busy = false; }
+      if (cnt.t === 10 && hund){ busy = true; render(); caption('10 tens = 1 hundred!'); await say('Ten tens make one hundred!'); cnt.t = 0; cnt.h++; busy = false; }
+      else if (cnt.t === 10){ cnt.t = 9; }
+      if (!alive()) return;
+      render();
+      if (val() < T) say(String(val()), {rate:1.1});
+      check();
+    };
+    render();
+    S.repeat = () => say(`Build the number ${T}.`); againButton();
+    prompt(`Build ${T}`, `Build the number ${T}. Tap to add ${hund ? 'hundreds, ' : ''}tens and ones.`);
+  });
+}
+function qRound(){
+  const to = pick([10,100]); let n;
+  do { n = to===10 ? randInt(11,99) : randInt(101,999); } while (n % to === 0);
+  const lo = Math.floor(n/to)*to, hi = lo + to, mid = n - lo === to/2, ans = (n - lo) >= to/2 ? hi : lo;
+  const q = {key:`r${n}-${to}`, cap:`Round ${n} to the nearest ${to}`, spoken:`Round ${n} to the nearest ${to}.`, answer:String(ans),
+    choices:mc(String(ans), [String(ans===lo ? hi : lo), String(hi+to), lo-to > 0 ? String(lo-to) : null, to===100 ? String(Math.round(n/10)*10) : null], 4),
+    explain: mid ? `${n} is exactly in the middle, so we round up to ${hi}.` : `${n} is closer to ${ans} than to ${ans===lo ? hi : lo}.`,
+    hint: () => `Look at the number line. Is ${n} closer to ${lo} or ${hi}?`};
+  q.draw = (w, A) => {
+    const x0 = 40, x1 = W-40, y = A.y + 24;
+    line(w, `M${x0},${f(y)} L${x1},${f(y)}`, C.paper, 5);
+    for (let i=0;i<=10;i++){
+      const x = x0 + (x1-x0)*i/10, big = i%5===0;
+      line(w, `M${f(x)},${f(y-(big?16:9))} L${f(x)},${f(y+(big?16:9))}`, C.paper, big?4:2.5);
+      if (big) txt(w, lo + to*i/10, 22, {fill:C.paper, x, y:y+38});
+    }
+    const nx = x0 + (x1-x0)*(n-lo)/to;
+    const rk = thing(w, nx, y-58); drawRocket(rk.core, 32);
+    txt(w, n, 28, {hand:true, fill:C.sun, x:nx, y:y-112});
+  };
+  return q;
+}
+
+/* Skip count stars: 1.NBT.1 count to 120 · 2.NBT.2 by 5s, 10s, 100s · 3.OA.9 multiples */
+function qSkip(g){
+  let step, start, back = false;
+  if (g===1){
+    const t = pick(['10','1','5','2']);
+    if (t==='10'){ step = 10; start = randInt(1,6)*10; } else if (t==='1'){ step = 1; start = randInt(95,114); }
+    else if (t==='5'){ step = 5; start = randInt(1,8)*5; } else { step = 2; start = randInt(1,8)*2; }
+  } else if (g===2){
+    step = pick([2,5,10,10,100]);
+    start = step===100 ? randInt(1,5)*100 + pick([0,0,50]) : step===10 ? randInt(3,70) : step*randInt(1,14);
+  } else if (Math.random() < .7){ step = pick([3,4,6,7,8,9]); start = step*randInt(1,5); }
+  else { step = pick([10,100]); back = true; start = step===10 ? randInt(60,99) : randInt(6,9)*100 + randInt(1,9)*10; }
+  const seq = Array.from({length:5}, (_,i) => back ? start - i*step : start + i*step);
+  const hole = g===1 ? 4 : randInt(2,4), ans = seq[hole];
+  const cands = [ans+1, ans-1, ans+step, ans-step, ans+10, ans-10, ans+2*step].filter(v => v>=0 && v!==ans).map(String);
+  const q = {key:'s'+seq.join(','), cap: back ? `Count back by ${step}s!` : `Count by ${step}s!`,
+    spoken: `${back ? 'Count back by' : 'Count by'} ${step}s. ` + seq.map((v,i) => i===hole ? 'what?' : v).join(', '),
+    answer:String(ans), choices:mc(String(ans), cands, g===1?3:4), explain:`${seq.join(', ')}!`,
+    hint: () => `Not quite. ${hole > 0 ? `Start at ${seq[hole-1]} and ${back ? 'count back' : 'count on'} ${step}.` : 'Try again!'}`};
+  q.draw = (w, A) => {
+    const r = clamp(Math.min((W-30)/11.5, A.h*.2), 24, 50);
+    const { xs } = rowXs(5, r*2, r*.3);
+    const cols = [C.sky, C.gum, C.mint, C.lilac, C.orange];
+    for (let i=0;i<4;i++) {
+      const mx = (xs[i]+xs[i+1])/2;
+      line(w, `M${f(xs[i])},${f(A.y-r*1.1)} Q${f(mx)},${f(A.y-r*2.2)} ${f(xs[i+1])},${f(A.y-r*1.1)}`, 'rgba(255,253,246,.55)', 3);
+      txt(w, (back?'−':'+') + step, clamp(r*.5,14,22), {hand:true, fill:C.sun, x:mx, y:A.y-r*2.15});
+    }
+    seq.forEach((v,i) => {
+      const t = thing(w, xs[i], A.y);
+      const fs = r*(String(v).length > 2 ? .62 : .8);
+      if (i === hole){ sketch(t.core, blob(r,.05,12), {stroke:C.paper, sw:3, dash:'3 8'}); txt(t.core, '?', r*.8, {fill:C.paper}); q._hole = t; q._fs = fs; q._col = cols[i]; }
+      else { sketch(t.core, blob(r,.06,12), {fill:cols[i]}); txt(t.core, v, fs); }
+    });
+    q._r = r;
+  };
+  q.onRight = () => { const t = q._hole; t.core.innerHTML=''; sketch(t.core, blob(q._r,.06,12), {fill:C.sun}); txt(t.core, ans, q._fs); pop(t,.3); };
+  return q;
+}
+
+/* Array station: 1.OA counting · 2.OA.4 arrays & repeated addition · 3.MD.7 area */
+function qArray(g){
+  let r, c;
+  if (g===1){ r = randInt(2,3); c = randInt(2,5); }
+  else if (g===2){ r = randInt(2,5); c = randInt(2,5); }
+  else { r = randInt(3,8); c = randInt(3,9); }
+  const ans = r*c, rep = Array(r).fill(c).join(' + ');
+  const q = {key:`a${r}x${c}`, answer:String(ans), choices:mc(String(ans), [ans+r, ans-r, ans+c, ans-c, r+c, ans+1].filter(v => v>0 && v!==ans).map(String), g===1?3:4)};
+  if (g===3){ q.cap = 'What is the area of the floor?'; q.spoken = 'Each tile is one square unit. What is the area of the floor, in square units?';
+    q.explain = `${r} rows of ${c}. ${r} times ${c} is ${ans} square units.`; q.hint = () => `Try ${r} times ${c}.`; }
+  else { q.cap = g===1 ? 'How many windows?' : `${r} rows of ${c}. How many?`; q.spoken = g===1 ? 'How many windows are on the space station?' : `There are ${r} rows with ${c} windows in each row. How many windows in all?`;
+    q.explain = `${rep} is ${ans}.`; q.hint = () => g===1 ? 'Not quite. Count each row!' : `Try adding ${c}, ${r} times.`; }
+  q.draw = (w, A) => {
+    const cs = Math.min((A.w*.78)/c, (A.h*.72)/r, 58);
+    const pw = c*cs + cs*.8, ph = r*cs + cs*.8;
+    panel(w, W/2, A.y, pw, ph, g===3 ? '#E8E4F7' : '#C9CED6');
+    if (g===3){
+      txt(w, `${c} units`, clamp(cs*.5,15,24), {hand:true, fill:C.paper, x:W/2, y:A.y - ph/2 - 16});
+      txt(w, `${r} units`, clamp(cs*.5,15,24), {hand:true, fill:C.paper, x:W/2 - pw/2 - 8, y:A.y}).setAttribute('transform', `rotate(-90 ${f(W/2 - pw/2 - 14)} ${f(A.y)})`);
+    }
+    for (let i=0;i<r;i++) for (let j=0;j<c;j++){
+      const x = W/2 - c*cs/2 + cs*(j+.5), y = A.y - r*cs/2 + cs*(i+.5);
+      if (g===3) el('rect', {x:f(x-cs/2), y:f(y-cs/2), width:f(cs), height:f(cs), fill:(i+j)%2 ? '#FFF1A8' : '#FFE27A', stroke:C.ink, 'stroke-width':1.5}, w);
+      else { el('circle', {cx:f(x), cy:f(y), r:f(cs*.33), fill:C.sky, stroke:C.ink, 'stroke-width':2.5}, w); el('circle', {cx:f(x-cs*.1), cy:f(y-cs*.1), r:f(cs*.07), fill:'#fff'}, w); }
+    }
+  };
+  return q;
+}
+
+/* Space clock: 1.MD.3 hour & half hour · 2.MD.7 five minutes · 3.MD.1 to the minute */
+function qClock(g){
+  const hr = randInt(1,12), m = g===1 ? pick([0,30]) : g===2 ? randInt(0,11)*5 : randInt(0,59);
+  const fmt = (H_, M_) => `${((H_-1+12)%12)+1}:${String((M_+60)%60).padStart(2,'0')}`;
+  const ans = fmt(hr, m);
+  const cands = g===1 ? [fmt(hr,30-m), fmt(hr+1,m), fmt(hr-1,m)] : g===2 ? [fmt(hr,m+5), fmt(hr,m-5), fmt(hr+1,m), fmt(hr-1,m)] : [fmt(hr,m+1), fmt(hr,m-1), fmt(hr,m+5), fmt(hr+1,m)];
+  const explain = g===1
+    ? (m===0 ? `The short hand points to ${hr}, and the long hand points to 12. It's ${hr} o'clock.` : `The long hand points to 6, so it's half past ${hr}. That's ${ans}.`)
+    : `The short hand is ${m===0 ? 'on' : 'just past'} ${hr}, and the long hand shows ${m} minutes. It's ${ans}.`;
+  const q = {key:'t'+ans, cap:'What time is it?', spoken:'What time does the clock show?', answer:ans, choices:mc(ans, cands, g===1?3:4), explain,
+    hint: () => 'The short hand shows the hour. The long hand shows the minutes.'};
+  q.draw = (w, A) => { drawClock(w, W/2, A.y, clamp(Math.min(A.w, A.h)*.45, 70, 170), hr, m, g>1); };
+  return q;
+}
+
+/* Moon money: coins (1st & 2nd, 2.MD.8) · making change from $1 (3rd) */
+function qCoins(g){
+  if (g===3){
+    const price = randInt(3,19)*5, change = 100 - price;
+    const q = {key:'c'+price, cap:`It costs ${price}¢. You pay $1.`, spoken:`A rocket sticker costs ${price} cents. You pay with one dollar. How much change do you get back?`,
+      answer:`${change}¢`, choices:mc(`${change}¢`, [change+5, change-5, change+10, change-10, price].filter(v => v>0 && v<100 && v!==change).map(v => `${v}¢`), 4),
+      explain:`${price} plus ${change} makes 100 cents, which is one dollar. Your change is ${change} cents.`,
+      hint: () => `Count up from ${price} to 100.`};
+    q.draw = (w, A) => {
+      const s = clamp(Math.min(A.w*.3, A.h*.7), 80, 170), sx = W/2 - s*.72, bx = W/2 + s*.72;
+      panel(w, sx, A.y, s, s); DOODLE.rocket(at(w, sx, A.y - s*.08), s*.34);
+      const tag = at(w, sx + s*.3, A.y + s*.34, 1, -8); sketch(tag, rrD(s*.6, s*.3, s*.06), {fill:C.sun, sw:3, hatch:false}); txt(tag, `${price}¢`, s*.18);
+      const bill = at(w, bx, A.y, 1, 4); sketch(bill, rrD(s, s*.5, s*.05), {fill:'#9ED8A7', sw:3.5, hatch:false});
+      el('circle', {r:f(s*.14), fill:'#C8EBCD', stroke:C.ink, 'stroke-width':2}, bill);
+      txt(bill, '$1', s*.16, {x:-s*.33, y:-s*.12}); txt(bill, '1', s*.14, {x:s*.36, y:s*.13});
+    };
+    return q;
+  }
+  let set;
+  const tot = s => s.q*25 + s.d*10 + s.n*5 + s.p, count = s => s.q + s.d + s.n + s.p;
+  do { set = g===1 ? {q:0, d:randInt(1,4), n:randInt(0,1), p:randInt(1,6)} : {q:randInt(0,3), d:randInt(0,3), n:randInt(0,2), p:randInt(0,4)}; }
+  while (tot(set) > 99 || count(set) < 3 || tot(set) < 10);
+  const coins = [...Array(set.q).fill('q'), ...Array(set.d).fill('d'), ...Array(set.n).fill('n'), ...Array(set.p).fill('p')];
+  const total = tot(set); let run = 0; const parts = coins.map(k => run += COIN[k].v);
+  const q = {key:'m'+coins.join(''), cap:'How much money?', spoken:'How many cents are there? Start with the biggest coins.',
+    answer:`${total}¢`, choices:mc(`${total}¢`, [total+1, total-1, total+5, total-5, total+10, total-10].filter(v => v>0).map(v => `${v}¢`), g===1?3:4),
+    explain:`${parts.join(', ')}. That's ${total} cents!`, hint: () => 'Start with the biggest coins, then count on.'};
+  q.draw = (w, A) => {
+    const R = clamp(Math.min(W,H)*.075, 26, 46), per = Math.max(1, Math.floor((W-30)/(R*2.4)));
+    const rows = Math.ceil(coins.length/per), y0 = A.y - (rows-1)*R*1.55;
+    coins.forEach((k,i) => { const row = Math.floor(i/per), inRow = Math.min(per, coins.length - row*per), col = i%per;
+      drawCoin(w, W/2 + (col-(inRow-1)/2)*R*2.4, y0 + row*R*3.1, R, k); });
+  };
+  return q;
+}
+
+/* Pizza planets: 1.G.3 halves & fourths · 2.G.3 thirds · 3.NF.1 fraction notation */
+const DEN = {2:['half','halves'], 3:['third','thirds'], 4:['fourth','fourths'], 6:['sixth','sixths'], 8:['eighth','eighths']};
+const fracWord = (k,n) => `${NUMW[k]} ${k===1 ? DEN[n][0] : DEN[n][1]}`;
+function qFrac(g){
+  let n, k, ans, choices, explain;
+  if (g===1){
+    [n,k] = pick([[2,1],[4,1],[2,2],[4,4],[2,1],[4,1]]);
+    ans = k===n ? 'the whole thing' : fracWord(k,n);
+    choices = shuffle(['one half','one fourth','the whole thing']);
+    explain = k===n ? `All ${n} parts are shaded. That's the whole thing!` : `There are ${n} equal parts, and one is shaded. That's ${ans}.`;
+  } else if (g===2){
+    n = pick([2,3,4]); k = randInt(1, n-1); ans = fracWord(k,n);
+    choices = mc(ans, [fracWord(n-k,n), fracWord(k, n===3?4:3), k+1<n ? fracWord(k+1,n) : null, fracWord(1, n===2?4:2)], 4);
+    explain = `There are ${n} equal parts, and ${NUMW[k]} ${k===1?'is':'are'} shaded. That's ${ans}.`;
+  } else {
+    n = pick([2,3,4,6,8]); k = randInt(1,n); ans = `${k}/${n}`;
+    const n2 = pick([2,3,4,6,8].filter(x => x!==n));
+    choices = mc(ans, [n-k>0 ? `${n-k}/${n}` : null, `${n}/${k}`, `${k}/${n2}`, k<n ? `${k+1}/${n}` : `${k-1}/${n}`], 4);
+    explain = `There are ${n} equal parts and ${NUMW[k]} ${k===1?'is':'are'} shaded, so it's ${fracWord(k,n)}${k===n ? ', one whole' : ''}.`;
+  }
+  const q = {key:`f${n}-${k}-${g}`, cap:'What part is shaded?', spoken:'What part of the pizza planet is shaded?', answer:ans, choices, explain,
+    hint: () => 'Count all the equal parts. Then count the shaded parts.'};
+  q.draw = (w, A) => { const R = clamp(Math.min(A.w, A.h)*.42, 60, 160); const t = thing(w, W/2, A.y); t.inner.classList.add('bob'); drawPizza(t.core, 0, 0, R, n, k); };
+  return q;
+}
+
+/* =========================================================
+   SPACE SCIENCE (grades 1–3)
+   ========================================================= */
+const SPACEQ = {
+  1:[
+    {q:'What is the Sun?', a:'A star', w:['A planet','A moon'], why:'The Sun is a star. It is the closest star to Earth.', pic:'sun'},
+    {q:'When can we see lots of stars?', a:'At night', w:['At lunchtime','Never'], why:'In the day, the Sun is so bright that we cannot see the other stars.', pic:'star'},
+    {q:'What makes day and night?', a:'Earth spinning', w:['The Sun turning off','Clouds moving'], why:'Earth spins around once a day. When our side faces the Sun, it is daytime.', pic:'P:Earth'},
+    {q:'Which season has the most daylight?', a:'Summer', w:['Winter','Fall'], why:'Summer days are long, and winter days are short.', pic:'sun'},
+    {q:'What does the Moon travel around?', a:'Earth', w:['Mars','Jupiter'], why:'The Moon goes all the way around Earth about once a month.', pic:'moon'},
+    {q:'Where does moonlight come from?', a:'The Sun', w:['The Moon makes it','Streetlights'], why:'The Moon does not make its own light. Sunlight bounces off it.', pic:'moon'},
+    {q:'Where does the Sun come up in the morning?', a:'In the east', w:['In the west','It never comes up'], why:'The Sun rises in the east and sets in the west.', pic:'sun'},
+    {q:'Why do astronauts wear space suits?', a:'To have air and stay safe', w:['To look fancy','To stay dry in the rain'], why:'Space has no air to breathe, so suits give astronauts air and keep them safe.', pic:'helmet'},
+  ],
+  2:[
+    {q:'How many planets go around our Sun?', a:'8', w:['9','12'], why:'There are eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune.', pic:'P:Saturn'},
+    {q:'Which planet is closest to the Sun?', a:'Mercury', w:['Venus','Mars'], why:'Mercury is the closest planet to the Sun.', pic:'P:Mercury'},
+    {q:'Which is the biggest planet?', a:'Jupiter', w:['Earth','Mars'], why:'Jupiter is the biggest planet. More than a thousand Earths could fit inside it!', pic:'P:Jupiter'},
+    {q:'Which planet is called the Red Planet?', a:'Mars', w:['Venus','Neptune'], why:'Mars looks red because its dust has rusty iron in it.', pic:'P:Mars'},
+    {q:'Which planet has big, bright rings?', a:'Saturn', w:['Mercury','Mars'], why:'Saturn has the biggest, brightest rings of any planet.', pic:'P:Saturn'},
+    {q:'How long does Earth take to go around the Sun?', a:'About a year', w:['About a day','About a week'], why:'One trip around the Sun takes about 365 days. That is one year!', pic:'sun'},
+    {q:'How long does Earth take to spin around once?', a:'About a day', w:['About a year','About an hour'], why:'Earth spins once about every 24 hours. That makes one day and one night.', pic:'P:Earth'},
+    {q:'What is a group of stars that makes a picture?', a:'A constellation', w:['A comet','A crater'], why:'A constellation is a group of stars that makes a pattern, like a bear or a hunter.', pic:'star'},
+  ],
+  3:[
+    {q:'What force pulls things down toward the ground?', a:'Gravity', w:['Wind','Sunlight'], why:'Gravity pulls things toward Earth. It is why a dropped ball falls down.', pic:'P:Earth'},
+    {q:'Why would you weigh less on the Moon?', a:'The Moon has less gravity', w:['The Moon has no air','The Moon is cold'], why:'The Moon has much less gravity than Earth. You would weigh about one sixth as much there.', pic:'moon'},
+    {q:'Which planet is the hottest?', a:'Venus', w:['Mercury','Mars'], why:'Venus is the hottest. Its thick clouds trap heat, even though Mercury is closer to the Sun.', pic:'P:Venus'},
+    {q:'Which planet is farthest from the Sun?', a:'Neptune', w:['Saturn','Uranus'], why:'Neptune is the farthest planet. Pluto is farther away, but it is a dwarf planet.', pic:'P:Neptune'},
+    {q:'About how long does sunlight take to reach Earth?', a:'About 8 minutes', w:['About 8 seconds','About 8 days'], why:'Light is super fast, but the Sun is so far away that the trip takes about 8 minutes.', pic:'sun'},
+    {q:'What is a comet mostly made of?', a:'Ice, dust, and rock', w:['Fire and smoke','Melted metal'], why:'Comets are like giant dirty snowballs. Near the Sun, some ice turns to gas and makes a tail.', pic:'comet'},
+    {q:'Why does the Moon seem to change shape?', a:'We see different amounts of its sunny side', w:['Clouds cover parts of it','It shrinks and grows'], why:'Half the Moon is always lit by the Sun. As the Moon travels around Earth, we see more or less of that lit half.', pic:'halfmoon'},
+    {q:'Which of these is a dwarf planet?', a:'Pluto', w:['Mars','Earth'], why:'Pluto is a dwarf planet. It is even smaller than our Moon!', pic:'planet'},
+    {q:'What is the path a planet takes around the Sun called?', a:'An orbit', w:['A crater','A comet'], why:'An orbit is the path something takes around something else, like Earth around the Sun.', pic:'sun'},
+  ],
+};
+function qFact(g){
+  const it = pick(SPACEQ[g]);
+  const q = {key:it.q, cap:it.q, spoken:it.q, answer:it.a, choices:shuffle([it.a, ...it.w]), explain:it.why};
+  q.draw = (w, A) => {
+    const R = clamp(Math.min(A.w, A.h)*.36, 50, 120), t = thing(w, W/2, A.y); t.inner.classList.add('bob');
+    if (it.pic.startsWith('P:')) drawNamed(t.core, PL8.find(p => p.n===it.pic.slice(2)), R*.8);
+    else DOODLE[it.pic](t.core, R);
+  };
+  return q;
+}
+
+/* =========================================================
+   LITERACY (grades 1–3)
+   ========================================================= */
+/* Letter lab: RF.1.3 short vowels & digraphs · RF.2.3 vowel teams · RF.3.3 / L.3.4 prefixes & suffixes */
+const LAB = {
+  1:[['sun',1,1,['u','a','i']],['cat',1,1,['a','o','u']],['cup',1,1,['u','a','e']],['pig',1,1,['i','e','o']],['bed',1,1,['e','i','a']],['dog',1,1,['o','u','e']],
+     ['fish',2,2,['sh','ch','th']],['ship',0,2,['sh','ch','th']],['chip',0,2,['ch','sh','th']],['bath',2,2,['th','sh','ch']],['duck',2,2,['ck','sh','th']],['moth',2,2,['th','sh','ch']]],
+  2:[['rain',1,2,['ai','oa','ee']],['boat',1,2,['oa','ai','ee']],['tree',2,2,['ee','oa','ai']],['moon',1,2,['oo','ee','ai']],['play',2,2,['ay','oa','ee']],
+     ['snow',2,2,['ow','ay','ee']],['star',2,2,['ar','or','ir']],['bird',1,2,['ir','ar','oa']],['coat',1,2,['oa','ee','ay']],['night',1,3,['igh','ee','oa']]],
+};
+const AFFIX = [
+  {m:'not happy', a:'unhappy', w:['rehappy','happyless'], why:'The prefix un means not. Unhappy means not happy.'},
+  {m:'paint again', a:'repaint', w:['unpaint','paintful'], why:'The prefix re means again. Repaint means paint again.'},
+  {m:'full of hope', a:'hopeful', w:['hopeless','rehope'], why:'The suffix ful means full of. Hopeful means full of hope.'},
+  {m:'without fear', a:'fearless', w:['fearful','unfear'], why:'The suffix less means without. Fearless means without fear.'},
+  {m:'not safe', a:'unsafe', w:['resafe','safeful'], why:'The prefix un means not. Unsafe means not safe.'},
+  {m:'build again', a:'rebuild', w:['unbuild','buildless'], why:'The prefix re means again. Rebuild means build again.'},
+  {m:'full of color', a:'colorful', w:['colorless','recolor'], why:'The suffix ful means full of. Colorful means full of color.'},
+  {m:'without a cloud', a:'cloudless', w:['cloudful','uncloud'], why:'The suffix less means without. A cloudless sky has no clouds.'},
+  {m:'the opposite of lock', a:'unlock', w:['relock','lockful'], why:'The prefix un can mean the opposite. Unlock is the opposite of lock.'},
+  {m:'read again', a:'reread', w:['unread','readful'], why:'The prefix re means again. Reread means read again.'},
+];
+function qLab(g){
+  if (g===3){
+    const it = pick(AFFIX);
+    const q = {key:it.a, cap:`Which word means "${it.m}"?`, spoken:`Which word means ${it.m}?`, answer:it.a, choices:shuffle([it.a, ...it.w]), explain:it.why,
+      hint: c => `${cap1(c)} doesn't mean ${it.m}. Look at the beginning and end of each word.`};
+    q.draw = (w, A) => {
+      const s = `“${it.m}”`, fs = clamp(Math.min(A.w/(s.length*.55+2), A.h*.28), 26, 64);
+      panel(w, W/2, A.y - fs*.4, Math.min(W-30, s.length*fs*.55 + fs*2), fs*1.8); txt(w, s, fs, {x:W/2, y:A.y - fs*.4});
+      txt(w, 'un- = not   re- = again   -ful = full of   -less = without', clamp(A.w/34, 14, 22), {hand:true, fill:C.paper, x:W/2, y:A.y + fs*1.2});
+    };
+    return q;
+  }
+  const [word, s, len, opts] = pick(LAB[g]);
+  const miss = word.slice(s, s+len);
+  const q = {key:word, cap:'Fill in the missing sound!', spoken:`${word}. What is missing in ${word}?`, answer:miss, choices:shuffle(opts),
+    explain:`${cap1(word)}! ${word.toUpperCase().split('').join(', ')}.`, hint: () => `Listen: ${word}. Say it slowly.`, quietCap:true};
+  q.draw = (w, A) => {
+    const pic = DOODLE[word] ? word : null, n = word.length;
+    const ts = clamp(Math.min((W-40)/(n*1.18), A.h*(pic ? .3 : .5)), 40, 92);
+    const ty = pic ? A.y + A.h*.2 : A.y;
+    if (pic){ const pr = Math.min(A.h*.2, 80); const pc = thing(w, W/2, ty - ts*.55 - pr - 8); pc.inner.classList.add('bob'); DOODLE[pic](pc.core, pr); }
+    const { xs } = rowXs(n, ts, ts*.18);
+    q._tiles = []; q._ts = ts;
+    for (let i=0;i<n;i++){
+      const tg = at(w, xs[i], ty), blank = i>=s && i<s+len;
+      if (blank){ sketch(tg, rrD(ts, ts*1.1, ts*.16), {stroke:C.paper, sw:3.5, dash:'3 9'}); q._tiles.push({tg, i}); }
+      else { sketch(tg, rrD(ts, ts*1.1, ts*.16), {fill:C.paper, sw:3.5, hatch:false}); txt(tg, word[i], ts*.66); }
+    }
+  };
+  q.onRight = () => q._tiles.forEach(({tg, i}) => { tg.innerHTML=''; sketch(tg, rrD(q._ts, q._ts*1.1, q._ts*.16), {fill:C.sun, sw:3.5, hatch:false}); txt(tg, word[i], q._ts*.66); });
+  return q;
+}
+
+/* Sight word stars: Dolch 1st, 2nd, 3rd grade lists (RF.1.3g, RF.2.3f, RF.3.3d) */
+const SIGHT = {
+  1:['after','again','any','ask','by','could','every','fly','from','give','going','had','has','her','him','his','how','just','know','let','live','may','of','old','once','open','over','put','round','some','stop','take','thank','them','then','think','walk','were','when'],
+  2:['always','around','because','been','before','best','both','buy','call','cold','does','fast','first','five','found','gave','goes','green','its','made','many','off','pull','read','right','sing','sit','sleep','tell','their','these','those','upon','us','use','very','wash','which','why','wish','work','would','write','your'],
+  3:['about','better','bring','carry','clean','done','draw','drink','eight','fall','far','full','got','grow','hold','hot','hurt','keep','kind','laugh','light','long','much','myself','never','only','own','pick','seven','shall','show','small','start','today','together','try','warm'],
+};
+function qSight(g){
+  const L = SIGHT[g], w = pick(L);
+  const same = shuffle(L.filter(x => x!==w && x[0]===w[0])), rest = shuffle(L.filter(x => x!==w && x[0]!==w[0]));
+  const choices = shuffle([w, ...[...same.slice(0,2), ...rest].slice(0, g===1 ? 2 : 3)]);
+  const voiceOn = S.voice && HAS_TTS;
+  return {key:w, cap: voiceOn ? 'Listen, then find the word!' : `Find the word "${w}"`, spoken:`Find the word: ${w}. ${w}.`, answer:w, choices,
+    explain:`That says ${w}!`, hint: c => `That word is ${c}. Listen: ${w}.`, quietCap:true, draw:speakerPlanet};
+}
+
+/* Spell check: choose the correct spelling (L.1.2d, L.2.2d, L.3.2e–f) */
+const SPELL = {
+  1:[['ship','shep','sip'],['frog','forg','frogg'],['duck','duk','dukc'],['jump','jupm','jum'],['bell','bel','bele'],['sock','sok','soc'],['nest','nesd','nst'],['drum','durm','drom'],['fox','foks','fosk'],['this','thes','tis']],
+  2:[['rain','rane','rayn'],['boat','bote','boet'],['kite','kiet','kyte'],['cake','caek','cak'],['snow','sno','snoe'],['green','grean','gren'],['cloud','clowd','cluod'],['bright','brite','brigt'],['night','nite','niht'],['float','flote','flot']],
+  3:[['planet','plannet','planit'],['orbit','orbet','orbitt'],['rocket','roket','rockit'],['gravity','gravaty','gravitty'],['because','becuz','becose'],['comet','comett','comit'],['astronaut','astronot','astronaught'],['surface','surfase','serface'],['different','diffrent','diferent'],['answer','anser','answere']],
+};
+function qSpell(g){
+  const [w, ...bad] = pick(SPELL[g]);
+  return {key:w, cap:'Which spelling is right?', spoken:`Spell ${w}. Which is the right way to spell ${w}?`, answer:w, choices:shuffle([w, ...bad]),
+    explain:`${cap1(w)} is spelled ${w.toUpperCase().split('').join(', ')}.`, hint: () => `Not quite. Listen carefully: ${w}.`, quietCap:true, draw:speakerPlanet};
+}
+
+/* Space reader: short original passages + comprehension (RL/RI.1.1, RI.2.1, RL.2.5, RI.3.1, RI.3.8) */
+const READ = {
+  1:[
+    {text:"Pip has a red rocket. The rocket can fly up, up, up! Pip flies to the Moon. The Moon is gray and bumpy.", q:"What color is Pip's rocket?", a:'Red', w:['Blue','Green'], why:'The story says Pip has a red rocket.'},
+    {text:"Mo the alien has three eyes. Mo likes to hop on the Moon. Hop, hop, hop! Mo hops into a big hole. A big hole on the Moon is called a crater.", q:'What is a big hole on the Moon called?', a:'A crater', w:['A comet','A cookie'], why:'The story says a big hole on the Moon is called a crater.'},
+    {text:"At night, Kim looks up. She sees the Moon and lots of stars. In the day, she sees the Sun. The Sun is a star too!", q:'What does Kim see in the day?', a:'The Sun', w:['The Moon','Lots of stars'], why:'The story says that in the day, she sees the Sun.'},
+  ],
+  2:[
+    {text:"Pip packed for a trip to Mars. First, she put on her space suit. Next, she checked her air tank. Last, she climbed into the rocket and buckled her belt.", q:'What did Pip do right after she put on her space suit?', a:'Checked her air tank', w:['Climbed into the rocket','Buckled her belt'], why:'The story says first the suit, next the air tank.'},
+    {text:"Saturn is a giant planet made mostly of gas. You could not stand on it! Its rings are made of chunks of ice and rock. Some chunks are as small as grains of sand. Others are as big as a house.", q:"What are Saturn's rings made of?", a:'Chunks of ice and rock', w:['Ribbons of light','Clouds of smoke'], why:'The story says the rings are made of chunks of ice and rock.'},
+    {text:"Zed the alien planted a moon garden. He watered it every day, but nothing grew. Then Pip said, \"Plants need sunlight!\" Zed moved his garden to a sunny crater. Soon, tiny green sprouts popped up.", q:"Why did Zed's garden grow at the end?", a:'It got sunlight', w:['He watered it more','Pip sang to it'], why:'The garden grew after Zed moved it into the sunlight.'},
+  ],
+  3:[
+    {text:"Astronauts on the International Space Station can see about sixteen sunrises every day. The station zooms around Earth so fast that it circles the whole planet about once every ninety minutes. Each lap brings a new sunrise and a new sunset.", q:'Why do the astronauts see so many sunrises?', a:'The station circles Earth very quickly', w:['The Sun rises more often in space','They sleep all day'], why:'Each fast lap around Earth brings a new sunrise.'},
+    {text:"Maya wanted to know if every planet has a moon. She read that Earth has one moon and Mars has two tiny ones. Jupiter and Saturn each have dozens. But Mercury and Venus have none at all. \"So the answer is no,\" Maya wrote in her notebook.", q:'What did Maya find out?', a:'Not every planet has a moon', w:['Every planet has two moons','Only Earth has a moon'], why:'Mercury and Venus have no moons, so not every planet has one.'},
+    {text:"The footprints astronauts left on the Moon in 1969 are probably still there today. On Earth, wind and rain would wipe footprints away. But the Moon has almost no air, so there is no wind or rain to erase them.", q:'What is the main reason the footprints are still there?', a:'The Moon has no wind or rain', w:['Astronauts protect them','The Moon is very cold'], why:'With no wind or rain, nothing wipes the footprints away.'},
+  ],
+};
+function playReader(alive){
+  const g = gr();
+  if (!S.data.pass) S.data.pass = shuffle(READ[g]);
+  const p = S.data.pass[S.round % S.data.pass.length];
+  return quiz(alive, {key:p.q, cap:'Read, then answer!', spoken:`${p.text} ... ${p.q}`, answer:p.a, choices:shuffle([p.a, ...p.w]), explain:p.why,
+    hint: () => 'Not quite. Look back at the story!',
+    draw: (w, A) => {
+      const d = h('div','paper passage interactive'); d.id = 'passage';
+      d.style.top = (TOP - 6) + 'px'; d.style.maxHeight = Math.max(120, A.h + 4) + 'px';
+      const t1 = h('p'); t1.textContent = p.text; const t2 = h('p','q'); t2.textContent = p.q;
+      d.append(t1, t2); ui.appendChild(d);
+    }});
+}
+
+/* =========================================================
+   Celebration, parent gate, settings
+   ========================================================= */
+function celebrate(key){
+  sid++; S.screen = 'party';
+  const G = GAMES[key];
+  const st = S.data.sticker ? {...S.data.sticker} : {type:G.sticker};
+  st.rot = f(rnd(-18,18));
+  S.stickers.push(st);
+  sfx.fanfare();
+  const ov = h('div','overlay'); ov.id='party';
+  const cols = [C.sun, C.gum, C.mint, C.sky, C.tomato, C.lilac];
+  for (let i=0;i<28;i++){
+    const c = h('div','confetti'), col = pick(cols), sz = rnd(14,26);
+    c.innerHTML = pick([
+      `<svg width="${sz}" height="${sz}" viewBox="-12 -12 24 24"><path d="${starD(11)}" fill="${col}" stroke="#2B2A33" stroke-width="1.5"/></svg>`,
+      `<svg width="${sz*1.6}" height="${sz}" viewBox="0 0 32 20"><path d="M2 10 q5 -9 10 0 t10 0 t8 0" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round"/></svg>`,
+      `<svg width="${sz*.7}" height="${sz*.7}" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="${col}"/></svg>`]);
+    c.style.left = rnd(0,100)+'vw'; c.style.animationDuration = rnd(2.2,4)+'s'; c.style.animationDelay = rnd(0,.8)+'s';
+    ov.appendChild(c);
+  }
+  const sheet = h('div','sheet paper');
+  const svg = el('svg', {id:'sticker-svg', viewBox:'-110 -110 220 220'});
+  drawSticker(svg, st, 95);
+  sheet.appendChild(svg);
+  sheet.appendChild(h('h2', null, 'You got a sticker!'));
+  const row = h('div','row');
+  const mk = (icon, label, fn) => { const w = h('div','bigbtn'); const b = h('button','paper', icon); b.setAttribute('aria-label', label); b.onclick = () => { unlockAudio(); fn(); }; w.appendChild(b); w.appendChild(h('span', null, label)); return w; };
+  row.appendChild(mk(ICON.again, 'Again', () => startGame(key)));
+  row.appendChild(mk(ICON.home, 'Home', () => hub()));
+  sheet.appendChild(row);
+  ov.appendChild(sheet);
+  ui.appendChild(ov);
+  say('Hooray! You earned a sticker!');
+}
+function gearButton(){
+  const b = h('button','paper', ICON.gear); b.id='gear';
+  b.setAttribute('aria-label','Grown-up settings. Press and hold for 3 seconds.');
+  let t = null;
+  const start = e => { e.preventDefault(); e.stopPropagation(); b.classList.add('holding'); t = setTimeout(() => { t=null; b.classList.remove('holding'); openPanel(); }, 3000); };
+  const stop = () => { if (t){ clearTimeout(t); t=null; b.classList.remove('holding'); showTip(); } };
+  b.addEventListener('pointerdown', start);
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+  b.addEventListener('keydown', e => { if (e.key==='Enter') openPanel(); });
+  b.addEventListener('contextmenu', e => e.preventDefault());
+  ui.appendChild(b);
+}
+function showTip(){
+  if (document.getElementById('tip')) return;
+  const t = h('div','paper','Grown-ups: hold for 3 seconds'); t.id='tip'; ui.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+function openPanel(){
+  const ov = h('div','overlay'); ov.id='panel'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-label','Grown-up settings');
+  const sh = h('div','sheet paper');
+  const render = () => {
+    sh.innerHTML = '';
+    sh.appendChild(h('h2', null, 'Grown-up settings'));
+    const group = (label, opts, cur, set) => {
+      sh.appendChild(h('p','lbl',label));
+      const seg = h('div','seg');
+      opts.forEach(([v, t]) => { const b = h('button','opt', t); b.setAttribute('aria-pressed', String(cur===v)); b.onclick = () => { set(v); render(); }; seg.appendChild(b); });
+      sh.appendChild(seg);
+    };
+    group('Level', LEVELS, S.level, v => { setLevel(v); S.page = v.startsWith('g') ? 5 : Math.min(S.page, 4); });
+    group('Sound effects', [[true,'On'],[false,'Off']], S.sound, v => S.sound = v);
+    group('Voice', [[true,'On'],[false,'Off']], S.voice, v => S.voice = v);
+    sh.appendChild(h('p','lbl',"Child's name, for the Name tag game"));
+    const inp = document.createElement('input'); inp.value = S.name; inp.maxLength = 8; inp.placeholder = 'Letters only'; inp.setAttribute('aria-label',"Child's name");
+    inp.oninput = () => { S.name = inp.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,8); };
+    sh.appendChild(inp);
+    sh.appendChild(h('p','note', `Stickers earned: ${S.stickers.length}. All eight map pages are open in this prototype; the last three hold the Grade 1–3 games. Swipe or use the arrows to change pages.` + (HAS_TTS ? '' : ' This browser has no built-in voice, so instructions show as captions only.')));
+    const d = h('button','opt done','Done'); d.onclick = () => { ov.remove(); if (S.screen==='hub') hub(); }; sh.appendChild(d);
+  };
+  render(); ov.appendChild(sh); ui.appendChild(ov);
+  ov.addEventListener('pointerdown', e => { if (e.target === ov) ov.remove(); });
+}
+
+/* =========================================================
+   Boot & resize
+   ========================================================= */
+function layout(){
+  W = innerWidth; H = innerHeight;
+  stage.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  drawSky();
+}
+let rt = null;
+addEventListener('resize', () => {
+  clearTimeout(rt);
+  rt = setTimeout(() => {
+    if (innerWidth === W && innerHeight === H) return;
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    layout();
+    if (S.screen==='start') startScreen();
+    else if (S.screen==='hub') hub();
+    else if (S.screen==='game') startGame(S.gameKey, true);
+  }, 250);
+});
+layout();
+startScreen();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (S.screen==='start') startScreen(); });
+window.DoodleRocket = {startGame, hub, startScreen, S, GAMES, PAGES, LEVELS};
+})();
+</script>
+</body>
+</html>
