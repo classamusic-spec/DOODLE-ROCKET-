@@ -16,6 +16,16 @@ Open `app/index.html` in any modern browser. Nothing needs installing. To instal
   - adjust sound, voice, music, haptics, calm mode, big text and trip length
   - manage explorers
 
+## Screenshots
+
+| Galaxy map | Today's trip | Grade 4 geography |
+|---|---|---|
+| ![Galaxy map](docs/screenshots/tablet-03-galaxy-map.jpg) | ![Today's trip](docs/screenshots/tablet-06-todays-trip.jpg) | ![World map quiz](docs/screenshots/tablet-08-g4-geo.jpg) |
+| **Sink or float (ages 2–3)** | **Sticker celebration** | **Grown-ups progress** |
+| ![Sink or float](docs/screenshots/tablet-16-sprout-sinkfloat.jpg) | ![Sticker](docs/screenshots/tablet-21-sticker-celebration.jpg) | ![Progress](docs/screenshots/tablet-23-grown-ups-progress.jpg) |
+
+More in [`docs/screenshots/`](docs/screenshots/), covering phone, tablet and desktop (`overview-*.jpg` shows every screen at a glance).
+
 ## What's inside
 
 60 games across 15 worlds. Little games have 3 rounds and grade games have 5. Every grade question comes with a one-sentence "why".
