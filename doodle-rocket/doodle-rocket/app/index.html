@@ -1226,9 +1226,10 @@ function irisStep(x, y, closing, ms){
     setTimeout(res, ms + 20);
   });
 }
-let going = false;
+let going = false, nextGo = null;
 async function go(x, y, build){
-  if (going) return;
+  // a navigation requested mid-transition (keyboard, quick double tap) runs right after, instead of being dropped
+  if (going){ nextGo = [x, y, build]; return; }
   if (motionOff()){ build(); return; }
   going = true; fx.classList.add('on'); sfx.zip();
   try {
@@ -1240,6 +1241,7 @@ async function go(x, y, build){
     if (fx.firstChild) fx.firstChild.style.display = 'none';
     fx.classList.remove('on'); going = false;
   }
+  if (nextGo){ const n = nextGo; nextGo = null; go(...n); }
 }
 const mctx = document.createElement('canvas').getContext('2d');
 function measure(s, size, font=FONT_HAND){ mctx.font = `700 ${size}px ${font}`; return mctx.measureText(s).width; }
@@ -4992,10 +4994,12 @@ function qCompare(g){
     labels:{'<':'&lt;<small>less than</small>', '>':'&gt;<small>greater than</small>', '=':'=<small>equal to</small>'}, aria:c => SIGNS[c], explain,
     hint: c => c === '=' ? `They are not the same. ${hint}` : `Not quite. ${hint} The open side faces the bigger number.`};
   q.draw = (w, A_) => {
-    const fs = clamp(Math.min(A_.w/(Math.max(A.length, B.length)*1.25 + 3), A_.h*.28), 26, 72), pr = clamp(fs*1.25 + Math.max(A.length, B.length)*fs*.22, 60, 150);
-    const gap = Math.min(A_.w/2 - pr*.95, pr*1.25);
+    const L = Math.max(A.length, B.length);
+    let fs = clamp(Math.min(A_.w/(L*1.25 + 3), A_.h*.28), 26, 72);
+    const pr = clamp(fs*1.25 + L*fs*.22, 60, 150), gap = Math.min(A_.w/2 - pr*.95, pr*1.25), rp = Math.min(pr, gap*.9);
+    fs = Math.min(fs, Math.max(20, rp*1.7/(L*.6)));   // long numbers (930,341) shrink to stay inside their planet
     [[A, -1, C.sky], [B, 1, C.gum]].forEach(([s, k, c]) => { const t = thing(w, W/2 + k*gap, A_.y); t.inner.classList.add('bob'); t.inner.style.animationDelay = `${k*.8}s`;
-      drawPlanet(t.core, Math.min(pr, gap*.9), c, {craters:false}); txt(t.core, s, fs, {stroke:C.paper, sw:fs*.12}); });
+      drawPlanet(t.core, rp, c, {craters:false}); txt(t.core, s, fs, {stroke:C.paper, sw:fs*.12}); });
     q._slot = at(w, W/2, A_.y); sketch(q._slot, blob(fs*.62,.05,12), {fill:'rgba(255,253,246,.14)', stroke:C.paper, sw:3, dash:'3 8', hatch:false}); q._fs = fs;
   };
   q.onRight = () => { q._slot.innerHTML=''; sketch(q._slot, blob(q._fs*.62,.05,12), {fill:C.sun, sw:3.5, hatch:false}); txt(q._slot, ans, q._fs*.9); };
@@ -5087,7 +5091,8 @@ function qRound(){
   return q;
 }
 function numberLine(w, A, lo, hi, n, label, fmtV){
-  const x0 = 40, x1 = W-40, y = A.y + 24, fsz = clamp((x1-x0)/16, 14, 22);
+  // inset far enough that the end labels ("800,000") stay on screen
+  const fsz = clamp((W-80)/16, 14, 22), inset = Math.max(40, String(fmtV(hi)).length*fsz*.32 + 12), x0 = inset, x1 = W-inset, y = A.y + 24;
   line(w, `M${x0},${f(y)} L${x1},${f(y)}`, C.paper, 5);
   for (let i=0;i<=10;i++){
     const x = x0 + (x1-x0)*i/10, big = i%5===0;

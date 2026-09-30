@@ -1,8 +1,8 @@
 {
   "name": "doodle-rocket",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "Hand-drawn space learning game for ages 2 through Grade 3. Single-file HTML/SVG/JS prototype.",
+  "description": "Hand-drawn space homeschool app for ages 2 through Grade 5. Single-file HTML/SVG/JS, installable and offline.",
   "scripts": {
     "start": "npx --yes serve app -l 5173",
     "check": "node scripts/check-syntax.mjs",

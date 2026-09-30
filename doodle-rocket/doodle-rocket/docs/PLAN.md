@@ -298,26 +298,59 @@ Test in short 10-minute sessions, test each band with children actually in that 
 
 ## 15. What's in the prototype
 
-`app/index.html` is a single-file, fully playable web prototype (HTML + SVG + vanilla JS, no build step, no dependencies beyond two Google Fonts).
+`app/index.html` is a single-file, fully playable web app (HTML + SVG + vanilla JS, no build step, no runtime dependencies). Fonts are self-hosted in `app/fonts/`, so the app makes no network requests. Served over http(s), it is an installable PWA (`manifest.webmanifest`, `sw.js`, `icons/`) that works offline.
 
-**Screens.** Start screen with a "Who's playing?" level picker, an 8-page sketchbook hub (swipe or arrows), a 3-round game runner with progress dots, a sticker celebration, and a grown-up settings panel behind a 3-second hold on the gear.
+**Screens.**
+- An animated title screen.
+- "Who's exploring?" explorer profiles, each with a name, color and level.
+- A galaxy map with two galaxies: Little Explorer (8 worlds) and Big Kid (7 worlds). You switch between them with tabs or a swipe.
+- A world screen for each page, holding its game planets.
+- **Today's trip**: 3 stops picked per explorer per day, balanced across subjects and favouring the least-played games. Finishing it earns a medal sticker, and then Pip yawns goodnight.
+- A drag-to-arrange sticker book.
+- A bottom dock (Map, Trip, Stickers, Explorer).
+- A grown-ups panel behind a 3-second hold, with five tabs:
+  - Progress: minutes played, stickers, and mastery per subject and game
+  - Learning: per-subject level overrides and off-screen ideas
+  - Settings: sound, voice, music, haptics, calm mode, big text, trip length
+  - Players
+  - About
 
-**Levels.** Five levels: Ages 2–3 (Sprouts), Ages 4–5 (Captains), Grade 1, Grade 2, Grade 3. The Explorers band from Section 1 is folded into Captains for now. Choosing a grade opens the hub on the grade pages.
+**Layout.** Portrait phones, landscape tablets and wide desktop windows all have their own layouts. On large screens the play frame is centred and scaled up. Safe-area insets are respected, and the app runs full screen once installed.
 
-**Games (33 plus Doodle Pad).**
+**Levels.** There are seven levels: Ages 2–3 (Sprouts), Ages 4–5 (Captains) and Grades 1–5. Grown-ups can set a different level per subject, so a child can do Grade 3 math and Grade 1 reading.
 
-| Page | Games | Levels |
+**Saved progress.** Progress is stored on the device only, under `localStorage["doodle-rocket:v1"]`. It holds profiles, stickers, settings and learning stats: plays, wins, first-try rounds, and the last 10 rounds per game and level. "Got it" means about 80% first-try answers across two or more days. If storage is blocked, the app still runs; it just forgets progress between visits.
+
+**Games (60 including Doodle Pad).** Little games have 3 rounds and grade games have 5.
+
+| World | Games | Levels |
 |---|---|---|
 | Home Sweet Earth | Count the stars, Feed the planets, Day and night, Bigger moon | 2–5 |
 | Moon Bay | Letter rockets, Shape aliens, Moon moods, Suit up | 2–5 |
 | Planet Parade | Planet parade, Sound satellites, Rhyme rockets, Clap the planets | 2–5 |
 | Star Garden | Alien quick look, Comet tails, Trace to launch, Station sort | 2–5 |
-| Far Out | Countdown, Crater hop, Build a rocket, Name tag, Doodle pad | 2–5 |
-| Number Nebula | Asteroid math, Place value port, Skip count stars, Array station | Grades 1–3 |
-| Moon Market | Space clock, Moon money, Pizza planets, Mission control | Grades 1–3 |
-| Word Galaxy | Letter lab, Sight word stars, Spell check, Space reader | Grades 1–3 |
+| Far Out | Countdown, Crater hop, Build a rocket, Name tag | 2–5 |
+| Rainbow Nebula | Color mixer, Echo song, Pip's feelings, Doodle pad | 2–5 |
+| Science Station | Weather wardrobe, Sink or float, Five senses, Animal homes | 2–5 |
+| Puzzle Planet | Moon match, Connect the stars, Hide and seek, Odd one out | 2–5 |
+| Number Nebula | Asteroid math, Place value port, Skip count stars, Compare numbers | Grades 1–5 |
+| Shape Station | Array station, Pizza planets, Shape explorer, Space stories | Grades 1–5 |
+| Moon Market | Space clock, Moon money, Measure up, Graph galaxy | Grades 1–5 |
+| Word Galaxy | Letter lab, Sight word stars, Spell check, Word wizard | Grades 1–5 |
+| Story Cluster | Space reader, Grammar rockets, Punctuation port, Sentence builder | Grades 1–5 |
+| Science Lab | Mission control, Living things, Forces and matter, Earth and weather | Grades 1–5 |
+| Globe Trotter | World explorer, Map quest, Town hall, Time travelers | Grades 1–5 |
 
-**Not in the prototype yet:** the daily 3-game trip, the adaptive mastery engine (Section 7), saved progress (everything resets on reload), recorded voice-over (it uses the browser's speech voice), page unlocking (all pages are open), the grown-up progress page, offline/PWA install, and Spanish. See `docs/BACKLOG.md`.
+**Content.** All question banks live in one `CONTENT` object (see ARCHITECTURE.md):
+- about 780 hand-written quiz items across science, social studies and language
+- 39 reading passages, with 2 questions each
+- 70 spelling sets
+- Dolch sight words
+- phonics and affix lists
+
+Math questions are generated, and every generator is checked for correctness in tests. Every item has a one-sentence "why".
+
+**Not in the prototype yet:** the adaptive difficulty engine (Section 7, beyond the mastery tracking above), page unlocking (all worlds are open), recorded voice-over (it uses the browser's speech voice), and Spanish. See `docs/BACKLOG.md`.
 
 ---
 
@@ -349,3 +382,28 @@ The same world and art now reaches ages 6–8. Design pillars still apply, with 
 **Content rules for grades.** Every fact gets checked against NASA's kid-facing materials before it ships. Hedge approximate numbers ("about 8 minutes", "about a year"). Reading passages are original, 30–60 words at the target grade level, and always answerable from the text alone. Money currently uses US coins; localize before shipping outside the US.
 
 **Roadmap impact.** Grades 1–3 slot into Phase 2 as a "Big Kid" pack. It needs its own playtest pass with 6–8 year olds, who will find the toddler pacing slow. Watch for boredom signals (skipping the voice, tapping ahead) and tune rounds and pacing from there.
+
+---
+
+## 17. Homeschool expansion: Grades 4–5 and all subjects (v0.4)
+
+Doodle Rocket now aims to be a family's everyday learning companion from toddlerhood through Grade 5. It is still calm and short-session, but broad enough to cover a homeschool week.
+
+**Subjects.** Every game has a `subject` (math, reading, science, social, arts, life). The daily trip rotates through the subjects. The grown-up progress page groups results by subject and suggests an off-screen activity for each. Grown-ups can set a level per subject, so one child can do Grade 4 math and Grade 2 reading.
+
+**New for ages 2–5 (11 games).** These cover creative and life skills the first 21 games didn't:
+- color mixing (science and art)
+- echo song (pattern and memory)
+- feelings (social-emotional)
+- weather dressing, sink or float, five senses, animal homes (science)
+- memory match, connect-the-stars counting, hide and seek (prepositions), odd one out (logic)
+
+**Grades 4–5.** Every grade game extends to Grade 5:
+- **Math:** multi-digit operations, decimals and fractions (4.NF, 5.NF, 5.NBT), place value to millions and rounding, factors and multiples, area, perimeter and volume (4.MD.3, 5.MD.3–5), elapsed time, money with decimals, angles and the coordinate plane (4.MD.5–7, 5.G.1), multi-step word problems, unit conversion, and line graphs.
+- **Language:** Greek and Latin roots, commonly confused words, figurative language, verb tenses, commas in compound sentences and direct address, and building sentences from word tiles.
+- **Science:** strands for life, earth and physical science beside space (NGSS 1–5).
+- **Social studies:** a world map of continents and oceans, grid maps, civics and economics, and history and inventions (C3 D2).
+
+**Reading.** 39 original passages from Grade 1 to Grade 5, each with two questions: one literal and one inference, main idea or author's purpose. The question stays in the caption, so the passage and the choices share the screen.
+
+**What stays the same.** There are no fail states, every answer has a "why", and first-try answers feed the mastery labels grown-ups see. Children never see a score.
