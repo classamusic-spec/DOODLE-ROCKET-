@@ -1,0 +1,7 @@
+/*
+!/vercel.json
+!/doodle-rocket
+/doodle-rocket/*
+!/doodle-rocket/doodle-rocket
+/doodle-rocket/doodle-rocket/*
+!/doodle-rocket/doodle-rocket/app
