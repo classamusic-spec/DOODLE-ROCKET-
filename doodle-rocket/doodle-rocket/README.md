@@ -50,6 +50,12 @@ More in [`docs/screenshots/`](docs/screenshots/), covering phone, tablet and des
 
 The content is aligned to Common Core math and ELA, NGSS science and the C3 social studies framework. See `docs/PLAN.md` sections 15–17.
 
+## Deploy
+
+The app is static files with no build step. `vercel.json` at the repository root points Vercel at `doodle-rocket/doodle-rocket/app` and sets cache headers so the service worker updates cleanly. To deploy:
+- **Dashboard:** import the GitHub repo in Vercel. The defaults from `vercel.json` work as they are.
+- **CLI:** run `npx vercel --prod` from the repository root.
+
 ## Repo layout
 
 ```
